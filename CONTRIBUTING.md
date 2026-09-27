@@ -93,6 +93,15 @@ mechanism through the mechanism.
    then assert. Otherwise step 1 passes too, and you have proved only that
    nothing was there.
 
+**Its sibling: code that is present and does nothing.** It compiles, it reads
+right in review, and it never runs. The latest case: a draft closed with Back was
+meant to remember the screen it was written on. The line doing that checked
+`_pin != null` inside the same `setState` that had set `_pin = null` one line
+earlier, so the branch could never be taken. The test written first, and
+watched failing, caught it before merge; the fix itself passed review. Same
+rule as above, applied before the code exists: **write the test, see it fail
+for the reason you expect, then write the change.**
+
 ## SDK constraints that are not negotiable
 
 These are load-bearing. Changing one breaks something that is not obvious from
