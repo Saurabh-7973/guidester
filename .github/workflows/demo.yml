@@ -1,0 +1,49 @@
+name: Try-it demo
+
+# Publishes the "Try it in your browser" page to GitHub Pages: the example app
+# built from packages/guidester/example/lib/web_demo.dart. Rebuilt whenever the
+# package changes, so the demo always runs the current SDK.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/guidester/**'
+      - '.github/workflows/demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/guidester/example
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web --release -t lib/web_demo.dart --base-href /guidester/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/guidester/example/build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
