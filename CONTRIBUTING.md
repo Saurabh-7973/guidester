@@ -45,6 +45,17 @@ gate. Regenerate deliberately, never to make red go away:
 flutter test --update-goldens        # then look at the diff before committing
 ```
 
+**On a device.** The unit tests run under Flutter's test binding, which has no platform
+channels and no GPU. `packages/guidester/example/integration_test/device_test.dart` files one
+comment on a real device or simulator and checks what only a device can show: a rendered
+screenshot, device and app info answering, and the tap, pin, type and send flow on the
+platform's own text input. Run it before a release that touches capture or input:
+
+```bash
+cd packages/guidester/example
+flutter test integration_test/device_test.dart -d <device id>
+```
+
 **Bumping the SDK version touches the dashboard too.** The onboarding install
 snippet (`apps/dashboard/lib/src/widgets/onboarding_previews.dart`) must name the
 version in `packages/guidester/pubspec.yaml`; `install_preview_test` enforces it,
