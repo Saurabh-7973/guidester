@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { type Arrived, notify } from "./notify.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -116,6 +117,33 @@ async function lookupKey(admin: Admin, apiKey: string): Promise<KeyLookup> {
   // and it is the one that tells them to install a newer build.
   if (row.revoked_at) return { error: "key_revoked", status: 401 };
   return { keyId: row.id, projectId: row.project_id };
+}
+
+// Posts the new comment to the project's channel. Never throws, never
+// fails the ingest: notify() swallows its own errors, and a lookup that
+// fails is a notification skipped.
+async function announce(
+  admin: Admin,
+  projectId: string,
+  arrived: Arrived,
+): Promise<void> {
+  try {
+    const { data } = await admin
+      .from("project_webhooks")
+      .select("url, projects(name)")
+      .eq("project_id", projectId)
+      .maybeSingle();
+    const row = data as
+      | { url: string; projects: { name: string } | null }
+      | null;
+    if (!row?.url) return;
+    await notify(row.url, {
+      ...arrived,
+      project: row.projects?.name ?? "Project",
+    });
+  } catch {
+    // A channel is a courtesy; the comment is already on the board.
+  }
 }
 
 // What answered and when. This is the whole of the onboarding connection
@@ -561,6 +589,25 @@ Deno.serve(async (req) => {
   // Last, and unawaited for its result: a comment that arrived is not lost
   // because the bookkeeping column behind it failed to update.
   await touchKey(admin, key.keyId!, p);
+
+  // The team's channel, if the project has one (0014). After the response
+  // where the runtime allows it, so a slow channel never slows a tester.
+  const ping = announce(admin, project.id, {
+    project: "",
+    body,
+    screen: str(p.screen_name) ?? "UNKNOWN",
+    impact,
+    tester: str(p.tester_name),
+    device: str(p.device_model),
+    os: str(p.os_version),
+    build: str(p.app_version),
+    errors: errors.length,
+  });
+  const runtime = (globalThis as {
+    EdgeRuntime?: { waitUntil(p: Promise<unknown>): void };
+  }).EdgeRuntime;
+  if (runtime) runtime.waitUntil(ping);
+  else await ping;
 
   return json({ ok: true }, 200);
 });

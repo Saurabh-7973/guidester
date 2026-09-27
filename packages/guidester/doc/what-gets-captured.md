@@ -77,6 +77,14 @@ then opens the composer, and what the tester sends is an ordinary comment.
 No location, no contacts, no advertising identifier, no hardware identifier, no keystrokes
 outside the comment box, and nothing at all from a build that passes no key.
 
+## Posted to a team channel, if you connect one
+
+Nothing, unless an owner or admin connects a Slack, Discord or Microsoft Teams channel in
+the dashboard (Settings → Notifications). Then each new comment's text, screen name,
+impact, tester name, device model, OS version and build are posted to that channel as
+it arrives. The screenshot, the tester id, the error stacks and the device context are
+not.
+
 ## Test builds only
 
 Screenshots from a production build capture *other people's* personal data, which makes you

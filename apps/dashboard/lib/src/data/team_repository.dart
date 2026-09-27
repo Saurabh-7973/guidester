@@ -105,6 +105,32 @@ abstract class TeamRepository {
     required String projectId,
     required String userId,
   });
+
+  /// The channel new comments post to (0014), or null. Owner and admins.
+  Future<String?> webhook(String projectId);
+
+  /// Sets it, or with null removes it.
+  Future<void> setWebhook(String projectId, String? url);
+}
+
+/// The chat service a webhook URL belongs to, or null. Mirrors
+/// functions/ingest/notify.ts, which checks again before every call.
+String? webhookService(String raw) {
+  final u = Uri.tryParse(raw.trim());
+  if (u == null || u.scheme != 'https' || u.userInfo.isNotEmpty) return null;
+  if (u.hasPort && u.port != 443) return null;
+  final host = u.host.toLowerCase();
+  if (host == 'hooks.slack.com' && u.path.startsWith('/services/')) {
+    return 'Slack';
+  }
+  if ((host == 'discord.com' || host == 'discordapp.com') &&
+      u.path.startsWith('/api/webhooks/')) {
+    return 'Discord';
+  }
+  if (RegExp(r'^[a-z0-9-]+\.webhook\.office\.com$').hasMatch(host)) {
+    return 'Microsoft Teams';
+  }
+  return null;
 }
 
 /// A plausible address: something, @, something with a dot. The database
@@ -227,4 +253,32 @@ class SupabaseTeamRepository implements TeamRepository {
         .eq('project_id', projectId)
         .eq('user_id', userId);
   });
+
+  @override
+  Future<String?> webhook(String projectId) =>
+      _run('Could not read the channel.', () async {
+        final row = await _client
+            .from('project_webhooks')
+            .select('url')
+            .eq('project_id', projectId)
+            .maybeSingle();
+        return row?['url']?.toString();
+      });
+
+  @override
+  Future<void> setWebhook(String projectId, String? url) =>
+      _run('Could not save the channel.', () async {
+        if (url == null) {
+          await _client
+              .from('project_webhooks')
+              .delete()
+              .eq('project_id', projectId);
+          return;
+        }
+        await _client.from('project_webhooks').upsert({
+          'project_id': projectId,
+          'url': url.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      });
 }

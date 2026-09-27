@@ -33,10 +33,10 @@ jobs:
           deno-version: v2.x
 
       - name: Type-check the edge function
-        run: deno check supabase/functions/ingest/index.ts
+        run: deno check supabase/functions/ingest/index.ts supabase/functions/ingest/notify.ts
 
       - name: Lint the edge function
-        run: deno lint supabase/functions/ingest/index.ts
+        run: deno lint supabase/functions/ingest/
 
       - name: Edge function behaviour suite
         run: ./supabase/tests/ingest_test.sh

@@ -681,6 +681,51 @@ begin
     reset role;
   end;
 
+  -- 0014: the webhook is a credential. Owner and admins only.
+  declare
+    v_a constant uuid := 'aaaaaaaa-0000-0000-0000-000000000001';
+    v_n int;
+  begin
+    reset role;
+    insert into public.project_members (project_id, user_id, role) values
+      (v_a, '33333333-3333-3333-3333-333333333333', 'member'),
+      (v_a, '44444444-4444-4444-4444-444444444444', 'viewer')
+    on conflict (project_id, user_id) do update set role = excluded.role;
+
+    perform as_user('11111111-1111-1111-1111-111111111111');
+    insert into public.project_webhooks (project_id, url)
+      values (v_a, 'https://hooks.slack.com/services/T0/B0/secret');
+    select count(*) into n from public.project_webhooks;
+    perform assert(n = 1, 'webhook: the owner sets and reads it');
+    begin
+      update public.project_webhooks set url = 'http://hooks.slack.com/x';
+      perform assert(false, 'webhook: http must be rejected');
+    exception when check_violation then
+      perform assert(true, 'webhook: only https is stored');
+    end;
+
+    perform as_user('55555555-5555-5555-5555-555555555555');
+    select count(*) into n from public.project_webhooks;
+    perform assert(n = 1, 'webhook: an admin reads it');
+
+    perform as_user('33333333-3333-3333-3333-333333333333');
+    select count(*) into n from public.project_webhooks;
+    perform assert(n = 0, 'webhook: a member cannot read it');
+    update public.project_webhooks set url = 'https://discord.com/api/webhooks/1/x';
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 0, 'webhook: a member cannot change it');
+
+    perform as_user('44444444-4444-4444-4444-444444444444');
+    select count(*) into n from public.project_webhooks;
+    perform assert(n = 0, 'webhook: a viewer cannot read it');
+
+    reset role;
+    set local role anon;
+    select count(*) into n from public.project_webhooks;
+    perform assert(n = 0, 'webhook: anon reads nothing');
+    reset role;
+  end;
+
   -- 0010: an owner deletes their own project, and its comments go with it;
   -- nobody deletes someone else's.
   declare v_left int;
