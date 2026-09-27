@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in the SDK, dashboard or backend does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Every misconfiguration prints one `[guidester]` line in the
+        console; that line is usually the fastest route to a fix, so please include it.
+        Security problems: please report privately instead (see SECURITY.md).
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part?
+      options:
+        - SDK (the bubble / overlay in the app)
+        - Dashboard
+        - Backend / setup script
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+  - type: textarea
+    id: console
+    attributes:
+      label: "[guidester] console lines"
+      description: Anything the console printed starting with `[guidester]`.
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: guidester 0.5.5, Flutter 3.x, Android 15 / iOS 18 / web
+    validations:
+      required: true
+  - type: dropdown
+    id: router
+    attributes:
+      label: How does your app navigate?
+      options:
+        - Navigator with named routes (pushNamed)
+        - go_router
+        - auto_route / beamer / another Router
+        - Not relevant
