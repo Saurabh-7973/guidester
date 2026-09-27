@@ -13,12 +13,14 @@ import 'draft_store.dart';
 import 'error_recorder.dart';
 import 'guidester.dart';
 import 'impact.dart';
+import 'markup.dart';
 import 'outbox.dart';
 import 'screen_resolver.dart';
 import 'tester_identity.dart';
 import 'theme/tokens.dart';
 import 'ui/bubble.dart';
 import 'ui/composer.dart';
+import 'ui/markup_view.dart';
 import 'ui/mode_bar.dart';
 import 'ui/name_prompt.dart';
 import 'ui/retest_list.dart';
@@ -73,6 +75,12 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
   Offset? _pin;
   Size? _boundarySize;
   Uint8List? _shot;
+
+  /// The capture as taken, before any mark-up: drawing again starts from it,
+  /// so marks can be undone after Done.
+  Uint8List? _rawShot;
+  List<MarkupStroke> _strokes = const [];
+  bool _marking = false;
   bool _sending = false;
   String? _error;
   String _draft = '';
@@ -189,6 +197,11 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
 
   /// The draft stays saved: Back is "not now", not "throw it away".
   void _closeFromBack() {
+    // Back from the drawing view goes back to the composer, drawing kept.
+    if (_marking) {
+      setState(() => _marking = false);
+      return;
+    }
     if (_retestsOpen && _pin == null) {
       setState(() {
         _retestsOpen = false;
@@ -366,6 +379,9 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       _pin = local;
       _boundarySize = box.size;
       _shot = shot;
+      _rawShot = shot;
+      _strokes = const [];
+      _marking = false;
       _blank = blank;
       _screenName = resolution.name;
       _screenLayer = resolution.layer;
@@ -382,6 +398,9 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
     setState(() {
       _pin = null;
       _shot = null;
+      _rawShot = null;
+      _strokes = const [];
+      _marking = false;
       _boundarySize = null;
       if (discardDraft) {
         _draft = '';
@@ -398,6 +417,24 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       _sending = false;
       _awaitingName = false;
       _commentMode = keepCommentMode;
+    });
+  }
+
+  /// Burns the strokes into the screenshot that will be sent. A failed burn
+  /// keeps the plain capture: the comment is never worse off for marking.
+  Future<void> _finishMarkup(List<MarkupStroke> strokes) async {
+    final raw = _rawShot;
+    if (raw == null) return;
+    final kept = [
+      for (final s in strokes)
+        if (s.isNotEmpty) List.of(s),
+    ];
+    final burned = kept.isEmpty ? raw : await burnStrokes(raw, kept);
+    if (!mounted || _rawShot != raw) return;
+    setState(() {
+      _strokes = kept;
+      _shot = burned ?? raw;
+      _marking = false;
     });
   }
 
@@ -722,7 +759,28 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
                       onChanged: _onDraftChanged,
                       onSend: _send,
                       onCancel: _reset,
+                      marks: _strokes.length,
+                      onMarkup: _rawShot == null || _boundarySize == null
+                          ? null
+                          : () => setState(() => _marking = true),
                     ),
+            ),
+          ),
+
+        if (_marking && _rawShot != null && _boundarySize != null)
+          Positioned.fill(
+            child: GuidesterMarkupView(
+              screenshot: _rawShot!,
+              aspectRatio: _boundarySize!.width / _boundarySize!.height,
+              initial: _strokes,
+              pin: _pin == null
+                  ? null
+                  : Offset(
+                      _pin!.dx / _boundarySize!.width,
+                      _pin!.dy / _boundarySize!.height,
+                    ),
+              onCancel: () => setState(() => _marking = false),
+              onDone: _finishMarkup,
             ),
           ),
 

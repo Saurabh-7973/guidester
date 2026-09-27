@@ -17,6 +17,7 @@ For your testers, it is four taps:
 1. **Tap the blue bubble** in the corner of the test build.
 2. **Tap the spot** that is wrong. A pin drops there.
 3. **Type what's wrong**, pick how bad it is (Blocked, Annoying, Cosmetic), and send.
+   Want to point at it? **Mark up screenshot** and circle it with a finger.
 4. That's it. The app keeps running underneath the whole time.
 
 On your dashboard the comment arrives with a screenshot and the pin on it, the screen

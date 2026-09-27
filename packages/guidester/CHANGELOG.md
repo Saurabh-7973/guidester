@@ -1,5 +1,11 @@
 ## Unreleased
 
+- **Draw on the screenshot.** In the composer, *Mark up screenshot* opens the capture full
+  screen with the pin shown; the tester draws with a finger (Undo, Clear), and the marks
+  are burned into the image that is sent. The capture as taken is kept, so drawing again
+  starts from it. A failed burn-in sends the plain screenshot; marking never loses a
+  report. Back from the drawing returns to the composer.
+
 - README: which platforms are checked on a device, and the web demo linked from the Example
   section.
 
