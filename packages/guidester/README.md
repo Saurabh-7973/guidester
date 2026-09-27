@@ -311,7 +311,8 @@ saying "connected" about that app would be the exact false pass the check exists
 ## Example
 
 `example/` runs the same SDK under two routing styles in one app — named `Navigator` routes
-and GoRouter — and prints the resolved name and layer on every screen.
+and GoRouter — and prints the resolved name and layer on every screen. The same app runs
+[in your browser](https://saurabh-7973.github.io/guidester/), with a board beside it.
 
 ## Licence
 

@@ -1,3 +1,8 @@
+## Unreleased
+
+- README: which platforms are checked on a device, and the web demo linked from the Example
+  section.
+
 ## 0.5.6
 
 - **Web and WebAssembly are supported platforms.** The package no longer imports `dart:io`
