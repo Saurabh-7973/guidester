@@ -7,6 +7,7 @@ device, the build, and the errors the app threw.
 ![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](packages/guidester/screenshots/demo.gif)
 
 [![pub package](https://img.shields.io/pub/v/guidester.svg)](https://pub.dev/packages/guidester)
+[![Try it in your browser](https://img.shields.io/badge/Try_it-in_your_browser-2F59ED?style=for-the-badge)](https://saurabh-7973.github.io/guidester/)
 
 **Get started:** the [Quick start](packages/guidester/README.md#quick-start) takes about 15
 minutes: one command sets up your backend, then two changes to your app.

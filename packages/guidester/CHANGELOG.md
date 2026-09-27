@@ -1,5 +1,10 @@
-## Unreleased
+## 0.5.5
 
+- **Try it in your browser:** https://saurabh-7973.github.io/guidester/ runs the example
+  app with the real package, and a board beside it that shows each comment as your
+  dashboard would. Linked from the top of this page.
+- **A step-by-step quick start**, from backend to a comment on your board, with a step for
+  checking it worked and one for handing the build to testers.
 - **A draft closed with Back says where it was written.** Typing on one screen, pressing
   Back, and pinning on another reopened the draft with no word that it came from
   elsewhere. It now shows "Unsent comment from CHECKOUT", as a relaunch already did. The
