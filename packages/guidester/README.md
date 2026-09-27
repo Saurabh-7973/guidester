@@ -60,7 +60,7 @@ https://<your-project-ref>.supabase.co/functions/v1/ingest
 cd apps/dashboard/build/web && python3 -m http.server 8765
 ```
 
-Open <http://localhost:8765>, sign up and confirm your email, then create a project. The
+Open `http://localhost:8765` in your browser, sign up and confirm your email, then create a project. The
 last onboarding step shows your **key** and endpoint, ready to paste.
 
 > In Supabase, set **Authentication → URL Configuration → Site URL** to wherever you

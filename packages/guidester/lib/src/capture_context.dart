@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -126,12 +125,14 @@ class CaptureContext {
         final web = await plugin.webBrowserInfo.timeout(_pluginTimeout);
         return _cachedDevice = _DeviceFacts(
           model: web.browserName.name,
-          osVersion: web.appVersion,
+          // Not appVersion: on the web that is the browser's whole
+          // user-agent string, which reads as noise on the dashboard.
+          osVersion: 'Web${web.platform == null ? '' : ' · ${web.platform}'}',
           manufacturer: web.vendor,
           isPhysicalDevice: true,
         );
       }
-      if (Platform.isAndroid) {
+      if (defaultTargetPlatform == TargetPlatform.android) {
         final a = await plugin.androidInfo.timeout(_pluginTimeout);
         return _cachedDevice = _DeviceFacts(
           model: a.model,
@@ -140,7 +141,7 @@ class CaptureContext {
           isPhysicalDevice: a.isPhysicalDevice,
         );
       }
-      if (Platform.isIOS) {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
         final i = await plugin.iosInfo.timeout(_pluginTimeout);
         return _cachedDevice = _DeviceFacts(
           model: i.utsname.machine,
