@@ -56,6 +56,31 @@ void main() {
     );
   });
 
+  // Found in the 27 Sep audit: a comment marked Fixed while the In Progress
+  // tab was open vanished on the next refresh tick, pane and all, while its
+  // note and assignee were being typed.
+  testWidgets('the open comment stays until the reader moves on', (
+    tester,
+  ) async {
+    // The only comment in the tab: the case that emptied the board.
+    final open = <Comment>[testComment(id: '1', body: 'being read')];
+    final repo = FakeRepository({CommentStatus.open: open});
+    await tester.pumpWidget(_wrap(repo));
+    await tester.pumpAndSettle();
+    expect(find.text('being read'), findsNWidgets(2));
+
+    // It left this tab on the server (resolved elsewhere, or by this user).
+    open.clear();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('being read'),
+      findsWidgets,
+      reason: 'still open in the pane while it is being read',
+    );
+  });
+
   testWidgets('a pending delete does not come back during its Undo window', (
     tester,
   ) async {

@@ -217,6 +217,10 @@ class _CommentDetailState extends State<CommentDetail> {
                     ? const SizedBox.shrink()
                     : Center(
                         child: _DeleteControls(
+                          // One confirmation per comment. Without the key the
+                          // open state outlived a delete and offered the next
+                          // tester's "delete everything, no undo" (27 Sep).
+                          key: ValueKey(widget.comment.id),
                           onDelete: widget.onDelete!,
                           onDeleteTester: widget.onDeleteTester,
                           testerName: widget.comment.testerName,
@@ -436,6 +440,7 @@ class _NavLink extends StatelessWidget {
 /// mine".
 class _DeleteControls extends StatefulWidget {
   const _DeleteControls({
+    super.key,
     required this.onDelete,
     required this.onDeleteTester,
     required this.testerName,
@@ -488,12 +493,21 @@ class _DeleteControlsState extends State<_DeleteControls> {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _DangerButton(label: 'Delete comment', onTap: widget.onDelete),
+            _DangerButton(
+              label: 'Delete comment',
+              onTap: () {
+                setState(() => _confirming = false);
+                widget.onDelete();
+              },
+            ),
             if (widget.onDeleteTester != null)
               _DangerButton(
                 // Not deferred: many rows at once, and it is a data-erasure request.
                 label: 'Delete everything from $who, no undo',
-                onTap: widget.onDeleteTester!,
+                onTap: () {
+                  setState(() => _confirming = false);
+                  widget.onDeleteTester!();
+                },
               ),
             Semantics(
               button: true,

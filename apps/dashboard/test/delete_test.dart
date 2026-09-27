@@ -183,6 +183,33 @@ void main() {
     expect(repo.rows.map((c) => c.id), ['2']);
   });
 
+  // Found in the 27 Sep audit: after deleting one comment the pane moved to
+  // the next, and the confirmation stayed open with the next tester's name in
+  // "Delete everything from <them>, no undo" — one click from erasing the
+  // wrong person's comments.
+  testWidgets('the confirmation closes once a comment is deleted', (
+    tester,
+  ) async {
+    final repo = _Repo([_c('1', 'alpha'), _c('2', 'beta')]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete comment'));
+    await tester.pump();
+
+    expect(find.text('Delete comment'), findsNothing);
+    expect(find.textContaining('no undo'), findsNothing);
+    expect(
+      find.text('Delete'),
+      findsOneWidget,
+      reason: 'back to the plain button',
+    );
+
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('Undo within 5 s brings it back and deletes nothing', (
     tester,
   ) async {
