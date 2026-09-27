@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
+import 'app_build.dart';
+import 'app_build_web.dart' if (dart.library.io) 'app_build_io.dart';
+import 'device_facts.dart';
+import 'device_facts_web.dart' if (dart.library.io) 'device_facts_io.dart';
 import 'version.dart';
 
 /// Everything a developer needs to reproduce a report without asking.
@@ -27,8 +27,8 @@ class CaptureContext {
   /// Everything else, shipped as `context`.
   final Map<String, dynamic> extra;
 
-  static _DeviceFacts? _cachedDevice;
-  static PackageInfo? _cachedPackage;
+  static DeviceFacts? _cachedDevice;
+  static AppBuild? _cachedPackage;
 
   /// Collect everything. Display and locale values are read from [context] at
   /// tap time, not at init, because text scale and brightness change while
@@ -103,14 +103,12 @@ class CaptureContext {
 
   static const Duration _pluginTimeout = Duration(milliseconds: 800);
 
-  static Future<PackageInfo?> _package() async {
+  static Future<AppBuild?> _package() async {
     if (_cachedPackage != null) return _cachedPackage;
     try {
       // Platform channels can hang rather than throw when no implementation
       // is registered. Bound every one of them.
-      return _cachedPackage = await PackageInfo.fromPlatform().timeout(
-        _pluginTimeout,
-      );
+      return _cachedPackage = await readAppBuild().timeout(_pluginTimeout);
     } catch (_) {
       return null;
     }
@@ -118,38 +116,10 @@ class CaptureContext {
 
   /// Cached after the first read. Returns nulls on unsupported platforms
   /// rather than throwing — a missing device model must never lose a comment.
-  static Future<_DeviceFacts?> _device() async {
+  static Future<DeviceFacts?> _device() async {
     if (_cachedDevice != null) return _cachedDevice;
     try {
-      final plugin = DeviceInfoPlugin();
-      if (kIsWeb) {
-        final web = await plugin.webBrowserInfo.timeout(_pluginTimeout);
-        return _cachedDevice = _DeviceFacts(
-          model: web.browserName.name,
-          osVersion: web.appVersion,
-          manufacturer: web.vendor,
-          isPhysicalDevice: true,
-        );
-      }
-      if (Platform.isAndroid) {
-        final a = await plugin.androidInfo.timeout(_pluginTimeout);
-        return _cachedDevice = _DeviceFacts(
-          model: a.model,
-          osVersion: 'Android ${a.version.release} (SDK ${a.version.sdkInt})',
-          manufacturer: a.manufacturer,
-          isPhysicalDevice: a.isPhysicalDevice,
-        );
-      }
-      if (Platform.isIOS) {
-        final i = await plugin.iosInfo.timeout(_pluginTimeout);
-        return _cachedDevice = _DeviceFacts(
-          model: i.utsname.machine,
-          osVersion: '${i.systemName} ${i.systemVersion}',
-          manufacturer: 'Apple',
-          isPhysicalDevice: i.isPhysicalDevice,
-        );
-      }
-      return null;
+      return _cachedDevice = await readDeviceFacts(_pluginTimeout);
     } catch (_) {
       return null;
     }
@@ -159,18 +129,4 @@ class CaptureContext {
     _cachedDevice = null;
     _cachedPackage = null;
   }
-}
-
-class _DeviceFacts {
-  const _DeviceFacts({
-    this.model,
-    this.osVersion,
-    this.manufacturer,
-    this.isPhysicalDevice,
-  });
-
-  final String? model;
-  final String? osVersion;
-  final String? manufacturer;
-  final bool? isPhysicalDevice;
 }

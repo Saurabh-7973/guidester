@@ -132,6 +132,9 @@ class Guidester {
     ErrorRecorder.install();
   }
 
+  /// Whether the SDK is on: [init] was called with a non-empty key and
+  /// endpoint, and neither `enabled: false` nor `--dart-define=GUIDESTER=false`
+  /// turned it off. When false, [GuidesterOverlay] returns its child untouched.
   static bool get isEnabled => _enabled;
 
   static bool _initCalled = false;
@@ -188,7 +191,11 @@ class Guidester {
   /// Not marked `@visibleForTesting`: the overlay itself reads it, and an
   /// annotation the library has to violate teaches nothing.
   static bool debugLaunchPingEnabled = true;
+
+  /// The project key passed to [init], or empty.
   static String get apiKey => _apiKey ?? '';
+
+  /// The ingest endpoint passed to [init], or empty.
   static String get endpoint => _endpoint ?? '';
 
   /// Override the screen name for everything captured from here on.

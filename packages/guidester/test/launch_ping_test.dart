@@ -59,7 +59,9 @@ void main() {
     // The device lookup behind the ping is a platform channel with no
     // implementation under test: it answers only when its own 800ms timeout
     // fires, and pumpAndSettle alone advances no clock when nothing animates.
-    await tester.pump(const Duration(seconds: 1));
+    // Three seconds: the test binding reports Android, so the device lookup
+    // waits out its plugin timeout before the ping goes.
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     expect(rec.pings, hasLength(1));
@@ -84,7 +86,9 @@ void main() {
     // The device lookup behind the ping is a platform channel with no
     // implementation under test: it answers only when its own 800ms timeout
     // fires, and pumpAndSettle alone advances no clock when nothing animates.
-    await tester.pump(const Duration(seconds: 1));
+    // Three seconds: the test binding reports Android, so the device lookup
+    // waits out its plugin timeout before the ping goes.
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     expect(
@@ -105,7 +109,9 @@ void main() {
     // The device lookup behind the ping is a platform channel with no
     // implementation under test: it answers only when its own 800ms timeout
     // fires, and pumpAndSettle alone advances no clock when nothing animates.
-    await tester.pump(const Duration(seconds: 1));
+    // Three seconds: the test binding reports Android, so the device lookup
+    // waits out its plugin timeout before the ping goes.
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     expect(rec.pings, hasLength(1));

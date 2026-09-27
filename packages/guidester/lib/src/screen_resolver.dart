@@ -91,15 +91,30 @@ class GuidesterRouteObserver extends NavigatorObserver {
 
 /// Marks a subtree as belonging to a named screen. Layer 1, scoped.
 ///
-/// Wrap a screen when the resolver cannot infer a good name on its own:
+/// Most apps never need it: named routes and Router URIs are read on their
+/// own. Wrap a screen when the resolver cannot infer a good name, or when the
+/// app is built with `--obfuscate`, which removes the class-name fallback:
+///
 /// ```dart
-/// GuidesterScreen(name: 'CHECKOUT', child: ...)
+/// class CheckoutScreen extends StatelessWidget {
+///   @override
+///   Widget build(BuildContext context) => GuidesterScreen(
+///         name: 'CHECKOUT',
+///         child: Scaffold(/* ... */),
+///       );
+/// }
 /// ```
+///
+/// A nested [GuidesterScreen] wins over the one it sits inside, and
+/// [Guidester.setScreen] wins over both.
 class GuidesterScreen extends InheritedWidget {
   const GuidesterScreen({super.key, required this.name, required super.child});
 
+  /// The screen name comments from inside this subtree are filed under, as
+  /// written: `CHECKOUT`, `settings/profile`.
   final String name;
 
+  /// The name of the nearest enclosing [GuidesterScreen], or null.
   static String? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<GuidesterScreen>()?.name;
 
