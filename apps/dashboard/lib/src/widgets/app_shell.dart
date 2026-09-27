@@ -5,6 +5,7 @@ import '../theme/tokens.dart';
 /// The two top-level destinations (spec §3, nav tabs at y=61).
 enum ShellTab {
   projects('Projects'),
+  status('Status'),
   settings('Settings');
 
   const ShellTab(this.label);

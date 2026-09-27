@@ -87,7 +87,16 @@ abstract class CommentRepository {
   });
 }
 
-class SupabaseCommentRepository implements CommentRepository {
+/// Every comment's triage state, grouped by project: what a status report is
+/// built from. Its own interface so a board test's fake need not grow a
+/// method it never calls.
+abstract class ReportSource {
+  /// Keyed by project id. Only the projects this account can read (RLS), and
+  /// only [projectId]'s when given.
+  Future<Map<String, List<Comment>>> reportComments({String? projectId});
+}
+
+class SupabaseCommentRepository implements CommentRepository, ReportSource {
   SupabaseCommentRepository(this._client);
 
   final SupabaseClient _client;
@@ -297,6 +306,34 @@ class SupabaseCommentRepository implements CommentRepository {
       throw RepositoryException(_describe(e));
     } on RepositoryException {
       rethrow;
+    } catch (_) {
+      throw const RepositoryException(_unreachable, offline: true);
+    }
+  }
+
+  @override
+  Future<Map<String, List<Comment>>> reportComments({String? projectId}) async {
+    try {
+      // The triage columns only: no context, errors or screenshot paths,
+      // which are the heavy part of a row and no part of a report.
+      var query = _client
+          .from('comments')
+          .select(
+            'project_id, id, body, screen_name, status, impact, '
+            'tester_verdict, dev_verdict, blocked_on, assignee, tester_name, '
+            'created_at',
+          );
+      if (projectId != null) query = query.eq('project_id', projectId);
+      final rows = await query.order('created_at', ascending: false);
+      final out = <String, List<Comment>>{};
+      for (final r in rows) {
+        final id = r['project_id']?.toString();
+        if (id == null) continue;
+        (out[id] ??= []).add(Comment.fromRow(r));
+      }
+      return out;
+    } on PostgrestException catch (e) {
+      throw RepositoryException(_describe(e));
     } catch (_) {
       throw const RepositoryException(_unreachable, offline: true);
     }

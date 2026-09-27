@@ -33,6 +33,7 @@ class CommentsScreen extends StatefulWidget {
     this.projectName = 'Project',
     this.createdBy = 'You',
     this.onBackToProjects,
+    this.onOpenReport,
     this.projectTotal,
     this.commentId,
     this.status = CommentStatus.open,
@@ -62,6 +63,9 @@ class CommentsScreen extends StatefulWidget {
   final String projectName;
   final String createdBy;
   final VoidCallback? onBackToProjects;
+
+  /// This project's status report. Null hides the link.
+  final VoidCallback? onOpenReport;
 
   /// Every comment in the project, across tabs and filters. Decides whether
   /// the new-project help card is still worth its space. Null when unknown,
@@ -533,6 +537,7 @@ class _CommentsScreenState extends State<CommentsScreen>
       status: _status,
       counts: _counts,
       board: _board,
+      onOpenReport: widget.onOpenReport,
       onStatusSelected: (s) {
         // Reload on tap rather than from a TabController listener. A
         // TabController is an Animation: its listeners fire on animation

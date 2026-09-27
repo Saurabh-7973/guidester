@@ -20,6 +20,7 @@ class ProjectHeader extends StatelessWidget {
     required this.onStatusSelected,
     this.onLearn,
     this.board,
+    this.onOpenReport,
   });
 
   final String projectName;
@@ -36,6 +37,9 @@ class ProjectHeader extends StatelessWidget {
   /// The counts a developer opens the board to ask for. Null while loading.
   final Board? board;
   final ValueChanged<String>? onLearn;
+
+  /// The project's status report, for everyone who is not triaging.
+  final VoidCallback? onOpenReport;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +68,20 @@ class ProjectHeader extends StatelessWidget {
         if (board != null) ...[
           const SizedBox(height: 22),
           _BoardStrip(board: board!),
+        ],
+        if (onOpenReport != null) ...[
+          const SizedBox(height: 6),
+          TextButton.icon(
+            key: const ValueKey('open-status-report'),
+            onPressed: onOpenReport,
+            icon: const Icon(Icons.insights, size: 14),
+            label: const Text('Status report for the team'),
+            style: TextButton.styleFrom(
+              foregroundColor: T.accentText,
+              padding: EdgeInsets.zero,
+              textStyle: T.supporting,
+            ),
+          ),
         ],
         // §4: hide the learn card once the project has 3+ comments. It is
         // scaffolding for an empty project, not furniture for a full one.
