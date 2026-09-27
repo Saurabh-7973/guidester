@@ -10,6 +10,7 @@
 //   flutter build web -t lib/web_demo.dart --base-href /guidester/
 import 'dart:async';
 import 'dart:convert';
+import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,12 @@ import 'package:guidester/src/api_client.dart' show ApiClient;
 import 'package:http/http.dart' as http;
 
 import 'main.dart' show ExampleApp;
+
+@JS('window.open')
+external void _openTab(String url, String target);
+
+const _quickStart = 'https://pub.dev/packages/guidester#quick-start';
+const _pubDev = 'https://pub.dev/packages/guidester';
 
 void main() {
   // Any non-empty key and endpoint switch the SDK on. Neither is ever
@@ -185,7 +192,7 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const step = TextStyle(color: _text2, fontSize: 15, height: 1.6);
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -215,6 +222,25 @@ class _Intro extends StatelessWidget {
           'Nothing leaves your browser. In your own app, comments go to your '
           'own Supabase project.',
           style: TextStyle(color: _text3, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            FilledButton(
+              onPressed: () => _openTab(_quickStart, '_blank'),
+              style: FilledButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Set it up for your app  →'),
+            ),
+            OutlinedButton(
+              onPressed: () => _openTab(_pubDev, '_blank'),
+              child: const Text('pub.dev'),
+            ),
+          ],
         ),
       ],
     );
