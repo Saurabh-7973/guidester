@@ -293,3 +293,18 @@ end $$;
 
 revoke all on function public.accept_project_invites() from public;
 grant execute on function public.accept_project_invites() to authenticated;
+
+-- --------------------------------------------------------------------------
+-- The pre-0006 key column
+-- --------------------------------------------------------------------------
+--
+-- 0006 copied every projects.api_key into project_keys, where that value is a
+-- LIVE key. Until now only the owner could read a projects row; from here a
+-- viewer can, and a viewer must not hold a write key. Nothing reads this
+-- column (0006), so each value is replaced with a fresh random one that opens
+-- nothing. The live copy in project_keys, and every build carrying it, is
+-- untouched.
+update public.projects
+   set api_key = encode(gen_random_bytes(24), 'hex')
+ where exists (select 1 from public.project_keys k
+               where k.project_id = projects.id and k.key = projects.api_key);

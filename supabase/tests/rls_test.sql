@@ -609,6 +609,12 @@ begin
     end;
     select count(*) into n from public.project_keys where project_id = v_a;
     perform assert(n = 0, 'team: viewer does not see keys');
+    reset role;
+    select count(*) into n from public.projects p
+      join public.project_keys k on k.key = p.api_key
+      where p.id = v_a;
+    perform assert(n = 0, 'team: the projects row a viewer reads holds no live key');
+    perform as_user(v_view);
 
     -- A revoked invite is dead.
     perform as_user(v_own);
