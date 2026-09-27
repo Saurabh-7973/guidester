@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Try it in your browser
+    url: https://saurabh-7973.github.io/guidester/
+    about: See how it behaves before installing anything.
+  - name: Troubleshooting guide
+    url: https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/troubleshooting.md
+    about: No bubble, UNKNOWN screens, blank screenshots, comments that never arrive.
