@@ -1,0 +1,63 @@
+.env
+**/build/
+.dart_tool/
+*.aab
+*.apk
+
+# Beyond §4.1 — see DECISIONS.md D14
+.DS_Store
+supabase/.temp/
+
+# Strategy docs — local only, never pushed (D15, extended D45)
+GUIDESTER_V0_BUILD.md
+GUIDESTER_INPUTS.md
+GUIDESTER_FEEDBACK_TRIAGE.md
+GUIDESTER_OVERLAY_UX.md
+GUIDESTER_PRODUCT_SPEC.md
+GUIDESTER_DESIGN_SYSTEM.md
+GUIDESTER_RULINGS*.md
+GUIDESTER_WEB_BUILD_SPEC.md
+GUIDESTER_FIELD_TEST.md
+GUIDESTER_DEV_FIELD_TEST.md
+GUIDESTER_RESEARCH_TARGETS.md
+
+# Third-party reference source — Apache-2.0, read-only, never vendored (D24)
+feedback-master/
+
+# Flutter / Dart build output beyond §4.1
+.dart_tool/
+.flutter-plugins-dependencies
+**/ios/Flutter/ephemeral/
+**/android/.gradle/
+**/android/local.properties
+*.iml
+
+# Local credential drop — must never be committed (D33)
+github_token
+*.token
+.guidester-token
+
+# Credential drops. Deliberately NOT `*token*`: that also swallows legitimate
+# source files (token_service.dart, auth_token.dart) and git ignores them
+# silently, with no warning that they were skipped. Match credential files at
+# the repo root only, where they actually get dropped.
+/github_token
+/new_toen
+/*.token
+/*_token
+/.env
+/.env.*
+
+# Local helper scripts — may carry tokens, never pushed
+fetch_repo.sh
+fetch_feedback.sh
+
+# Golden-test failure artifacts. Regenerated on every failing run, never a
+# source of truth — the goldens themselves ARE committed.
+**/test/failures/
+
+# Client bug data — real names, tokens in the source threads, never pushed
+analysis/data/
+
+# Supabase CLI link state: project ref and organisation, never committed.
+**/supabase/.temp/

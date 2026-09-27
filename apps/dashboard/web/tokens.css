@@ -1,0 +1,49 @@
+/* GUIDESTER design tokens — transcribed from GUIDESTER_WEB_BUILD_SPEC.md §1, which
+ * measured the Figma frames (D75: the frames are the visual source).
+ *
+ * This file is the ONE source of truth for colour. Nothing else in the app may
+ * carry a hex literal; tool/check_tokens.sh fails the build if one appears.
+ *
+ * The Dart side does not read CSS at runtime — Flutter renders with CanvasKit,
+ * not the DOM. lib/src/theme/tokens.dart mirrors these values and
+ * test/tokens_test.dart parses THIS file and asserts they match, so the two
+ * cannot drift.
+ */
+
+:root{
+  --page:        #000000;   /* page background, all screens */
+  --surface-1:   #131313;   /* cards: learn card, code blocks */
+  --surface-2:   #1A1A1A;   /* inputs, subscription row */
+  --surface-3:   #1C1C1C;   /* comment cards (Group_11 variant), preview cards */
+  --surface-4:   #2A2A2A;   /* file/terminal chips in onboarding preview */
+
+  --text-1:      #FFFFFF;
+  --text-2:      #B4B4B4;   /* body-supporting */
+  --text-3:      #8B8B8B;   /* meta, breadcrumb, labels, placeholders */
+
+  --line:        #1F1F1F;   /* dividers, table header rule — measured */
+
+  --accent:      #2F59ED;   /* button and control fills — measured */
+  --accent-text: #446AEF;   /* active nav label, underline, links — measured */
+  --accent-dim:  #16295C;   /* DISABLED button fill — frames use a navy, not opacity */
+  --teal:        #2DD4BF;   /* status tabs only: active tab text + underline */
+  --amber:       #F59E0B;   /* project initial badge, screen tag in card variant */
+  --green:       #22C55E;   /* completed step pill + its connector */
+  --red:         #F87171;   /* impact BLOCKED (§5), error text — ruled, not in §1 */
+
+  /* Interaction states and edges the frames imply but never measured. */
+  --accent-hover:   #446AEF;   /* = accent-text: the lighter blue already in the palette */
+  --accent-pressed: #2549D0;
+  --accent-subtle:  rgba(47,89,237,0.16);   /* secondary button hover */
+  --on-accent:      #FFFFFF;   /* label on an accent fill: 5.57:1 */
+  --border-subtle:  #1F1F1F;   /* = line */
+  --border-default: #2A2A2A;   /* card and outlined-control edges */
+  --border-strong:  #3A3A3A;
+
+  --amber-ground:  #2A1D05;   /* ground under the screen-tag chip (§5) */
+
+  /* Floating SDK chrome only — the overlay sits over an app whose background
+     nobody knows, so its edges cannot come from --line, which is a divider
+     calibrated against a black page. Never used on the web surface. */
+  --chrome-border: #3A3A3A;
+}

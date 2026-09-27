@@ -1,0 +1,52 @@
+name: dashboard
+description: Guidester dashboard — triage tester comments from one project.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  cupertino_icons: ^1.0.8
+  flutter:
+    sdk: flutter
+  go_router: ^18.0.1
+  supabase_flutter: ^2.17.2
+  # Onboarding's "Open pub.dev" button, and nothing else. The dashboard is a
+  # web app; a link that a Flutter canvas cannot follow is a dead button.
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  http: ^1.6.0
+
+flutter:
+  uses-material-design: true
+
+  # Inter 4.1, vendored from the upstream release (rsms/inter, OFL — see
+  # fonts/INTER-OFL.txt). The spec asks for a <link> to Google Fonts; that
+  # loads Inter for the DOM, but Flutter web renders with CanvasKit, which
+  # only sees fonts declared here. Both are wired: the link covers the HTML
+  # bootstrap, these four weights cover everything Flutter paints.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: fonts/Inter-Bold.ttf
+          weight: 700
+    # Not Roboto: a small Latin cut of Inter under that name. Flutter web
+    # fetches Roboto from Google as its fallback font unless one is bundled.
+    - family: Roboto
+      fonts:
+        - asset: fonts/Fallback-Latin.ttf
+    - family: JetBrains Mono
+      fonts:
+        - asset: fonts/JetBrainsMono-Regular.ttf
+          weight: 400

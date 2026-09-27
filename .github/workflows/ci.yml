@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A queued run on a superseded commit helps nobody.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — schema and edge function
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client and server
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+
+      - name: Schema and RLS suite
+        run: ./supabase/tests/run.sh
+        env:
+          PGBIN: /usr/lib/postgresql/16/bin
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+
+      - name: Type-check the edge function
+        run: deno check supabase/functions/ingest/index.ts
+
+      - name: Lint the edge function
+        run: deno lint supabase/functions/ingest/index.ts
+
+      - name: Edge function behaviour suite
+        run: ./supabase/tests/ingest_test.sh
+
+      - name: Self-host setup script
+        run: ./supabase/tests/setup_test.sh
+
+  dart:
+    name: ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [packages/guidester, apps/dashboard]
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Design tokens are the one source of colour. A hex literal in a
+      # component is how two surfaces drift apart six weeks later.
+      - name: Design token guard
+        if: matrix.package == 'apps/dashboard'
+        run: ./tool/check_tokens.sh
+
+      - name: Formatting
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+      # `--exclude-tags golden` drops the pixel comparisons, and only those.
+      # They are authored on macOS; Linux renders text through a different font
+      # stack, which moves every antialiased edge — measured here at 1.84% on
+      # the onboarding step full of code and 0.21% on the near-empty shell. A
+      # Linux-vs-macOS pixel diff tests the runner's font rendering, not this
+      # layout. They still run, and still gate, on the machine that authors
+      # them: `flutter test` locally includes them.
+      - name: Test
+        run: flutter test --exclude-tags golden
+
+  publishability:
+    name: pub.dev dry run
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/guidester
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # Catches missing LICENSE, CHANGELOG or metadata long before a release.
+      - run: dart pub publish --dry-run

@@ -1,0 +1,47 @@
+name: guidester
+description: In-app tester feedback for Flutter, self-hosted. Testers tap anywhere, type, and send; comments land on your dashboard with a screenshot, screen name and device context.
+version: 0.5.3
+repository: https://github.com/Saurabh-7973/guidester
+issue_tracker: https://github.com/Saurabh-7973/guidester/issues
+
+# Five is the maximum pub.dev accepts, and these are the words a developer
+# looking for this actually types.
+# Shown on pub.dev from the package archive itself, so it works whatever the
+# repository's visibility. Recorded on an emulator against a live backend.
+screenshots:
+  - description: A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.
+    path: screenshots/demo.gif
+
+topics:
+  - feedback
+  - testing
+  - qa
+  - bug-reports
+  - overlay
+
+environment:
+  flutter: ">=3.24.0"
+  sdk: ^3.5.0
+
+# Constraints are deliberately wide, not caret-pinned. This package installs
+# into other people's apps: a tight `^` on a leaf dependency forces every host
+# to upgrade its own tree, which is the "bad citizen" failure §2 warns about.
+# Found for real — package_info_plus ^10 pulls win32 ^6, which collides with
+# share_plus ^10 (win32 ^5) in the first host app we wired.
+dependencies:
+  device_info_plus: '>=9.0.0 <15.0.0'
+  flutter:
+    sdk: flutter
+  http: '>=0.13.0 <2.0.0'
+  package_info_plus: '>=4.0.0 <12.0.0'
+  # The offline queue keeps screenshots as files, not in the host's
+  # preferences. Flutter's own plugin, and already in most host trees.
+  path_provider: '>=2.0.0 <3.0.0'
+  shared_preferences: '>=2.0.0 <3.0.0'
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:

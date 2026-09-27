@@ -1,0 +1,10 @@
+# Pixel comparisons are authored on macOS and are only meaningful there.
+# Linux renders text through a different font stack, which moves every
+# antialiased edge — a 1.8% diff on a screen full of code, 0.2% on one that is
+# nearly all chrome. That diff measures the runner, not this layout, so CI runs
+# everything except this tag. They are NOT optional locally: run the full suite
+# before pushing UI, and regenerate with
+#   flutter test --update-goldens
+tags:
+  golden:
+    description: Golden pixel comparisons. macOS-authored, excluded on CI.
