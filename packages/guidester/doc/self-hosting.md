@@ -23,6 +23,9 @@ else's backend.
 
 ## The quick way
 
+`setup.sh` needs bash, `python3`, the Supabase CLI and, for the dashboard, Flutter. On
+macOS and Linux that is everything; on Windows, run it from WSL or Git Bash.
+
 Create an empty project at [supabase.com](https://supabase.com/dashboard), install the
 Supabase CLI and run `supabase login`, then from a clone of the repository:
 
@@ -42,7 +45,25 @@ account, and the account is yours to create in the dashboard.
 
 ## What you need to run
 
-If you would rather do it by hand, this is everything the script does:
+If you would rather do it by hand, this is everything the script does, from the repository
+root:
+
+```bash
+supabase link --project-ref <ref>
+supabase db push --linked --include-all
+supabase functions deploy ingest --no-verify-jwt --project-ref <ref>
+
+# The dashboard, against your project. The anon (or publishable) key is public by
+# design; never put the service_role key here.
+echo '{"SUPABASE_URL": "https://<ref>.supabase.co", "SUPABASE_ANON_KEY": "<anon key>"}' \
+  > apps/dashboard/dart_defines.local.json
+cd apps/dashboard && ./tool/build_web.sh
+```
+
+`--no-verify-jwt` is required: the SDK authenticates with the project key in the request
+body, not a Supabase session, and with JWT checks on every comment is refused.
+
+What that sets up:
 
 
 - The migrations in `supabase/migrations`, applied in order. **`0001_init.sql` is not
