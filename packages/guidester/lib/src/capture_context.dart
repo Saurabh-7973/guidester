@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
+import 'app_build.dart';
+import 'app_build_web.dart' if (dart.library.io) 'app_build_io.dart';
 import 'version.dart';
 
 /// Everything a developer needs to reproduce a report without asking.
@@ -27,7 +28,7 @@ class CaptureContext {
   final Map<String, dynamic> extra;
 
   static _DeviceFacts? _cachedDevice;
-  static PackageInfo? _cachedPackage;
+  static AppBuild? _cachedPackage;
 
   /// Collect everything. Display and locale values are read from [context] at
   /// tap time, not at init, because text scale and brightness change while
@@ -102,14 +103,12 @@ class CaptureContext {
 
   static const Duration _pluginTimeout = Duration(milliseconds: 800);
 
-  static Future<PackageInfo?> _package() async {
+  static Future<AppBuild?> _package() async {
     if (_cachedPackage != null) return _cachedPackage;
     try {
       // Platform channels can hang rather than throw when no implementation
       // is registered. Bound every one of them.
-      return _cachedPackage = await PackageInfo.fromPlatform().timeout(
-        _pluginTimeout,
-      );
+      return _cachedPackage = await readAppBuild().timeout(_pluginTimeout);
     } catch (_) {
       return null;
     }
