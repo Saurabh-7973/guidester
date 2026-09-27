@@ -1,3 +1,14 @@
+## 0.5.4
+
+Documentation only; no code changes.
+
+- The source is public at https://github.com/Saurabh-7973/guidester, so the repository,
+  issues and documentation links on this page resolve.
+- The four documentation links were dropped by pub.dev, because the package lives in a
+  subfolder of the repository. They are full links now, and `repository` names the
+  subfolder.
+- The demo sits at the top of the README.
+
 ## 0.5.3
 
 Found recording the demo on an emulator, 27 Sep.
