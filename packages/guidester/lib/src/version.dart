@@ -5,4 +5,4 @@
 /// both together. Until 0.4.0 this was a hard-coded `'0.1.0'` default, so
 /// every comment filed before this change reports `sdk_version=0.1.0`
 /// whatever SDK it came from.
-const String guidesterSdkVersion = '0.5.5';
+const String guidesterSdkVersion = '0.5.6';
