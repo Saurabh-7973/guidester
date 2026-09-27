@@ -55,13 +55,16 @@ purpose *app functionality*:
 | Category | What Guidester actually sends | Where it comes from |
 |---|---|---|
 | Photos and videos | One PNG screenshot of the current screen, per comment. Overlay chrome is excluded; the host app is not. | `overlay.dart`, `_capture()` |
-| Device or other IDs | A random per-install id (`guidester.tester_id`), plus device model and OS version. Not an advertising id, not a hardware id. | `tester_identity.dart`, `capture_context.dart` |
+| Device or other IDs | A random per-install id (`guidester.tester_id`), plus device model and OS version, sent with each comment and with the launch ping when the app starts. Not an advertising id, not a hardware id. | `tester_identity.dart`, `capture_context.dart` |
 | App activity | The comment text, the resolved screen name, the tap coordinates, the impact, app version, text scale, brightness, orientation, locale, route breadcrumb. | `capture_context.dart` |
 | App activity — crash and error data | The last three errors the app threw during the session: the exception text, up to 24 stack frames, the Flutter library that reported it, and the route it happened on. Sent with a comment, never on its own. | `error_recorder.dart` |
 
 Also true, and worth stating plainly in the listing:
 
 - The tester types their own name once. It is device-local and is not an account.
+- **A comment sent without a connection is stored on the device** (text, screenshot
+  and context, in the app's own storage) and sent automatically when the network is
+  back: at most 20, for at most 14 days, deleted once sent.
 - **An exception message can quote your app's own data.** `Invalid argument:
   user@example.com` is an ordinary Dart error, and the SDK cannot tell that
   string from any other. Nothing redacts it. If a screen handles data you would
@@ -123,7 +126,8 @@ nothing left pointing at it.
 > (app version, text size, light or dark mode, orientation, language, and which
 > screen you were on), along with any errors the app ran into while you were
 > using it, including the technical details of where they happened. Nothing is
-> captured unless you tap send. This data is
+> captured unless you tap send. If you are offline, your feedback is kept on your
+> device and sent once you are back online. This data is
 > stored in our own database, is not sold or shared with advertisers, and is used
 > only to fix the problems you report. You can ask us to delete your feedback at
 > any time by contacting &lt;address&gt;, and we will remove it and the screenshots
