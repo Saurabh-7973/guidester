@@ -1,7 +1,7 @@
 name: guidester
 description: In-app tester feedback for Flutter, self-hosted. Testers tap anywhere, type, and send; comments land on your dashboard with a screenshot, screen name and device context.
-version: 0.5.3
-repository: https://github.com/Saurabh-7973/guidester
+version: 0.5.4
+repository: https://github.com/Saurabh-7973/guidester/tree/main/packages/guidester
 issue_tracker: https://github.com/Saurabh-7973/guidester/issues
 
 # Five is the maximum pub.dev accepts, and these are the words a developer

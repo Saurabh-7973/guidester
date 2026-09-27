@@ -3,6 +3,8 @@
 **Testers tap anywhere in your app, type what's wrong, and it lands on your dashboard with
 a screenshot, the screen name, the device, the build, and the error that caused it.**
 
+![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/demo.gif)
+
 ```dart
 void main() {
   Guidester.init(
@@ -27,7 +29,7 @@ flutter run --dart-define=GUIDESTER_KEY=<your key> \
 
 That is the whole install. Three lines of Dart, two commands. The endpoint is your own
 deployment of the backend in this repository — the package ships no default
-([self-hosting](doc/self-hosting.md)).
+([self-hosting](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/self-hosting.md)).
 
 **The key is the switch.** A production build passes no `--dart-define`, so the key is
 empty, so the overlay returns your widget on the first line of `build()` and no capture or
@@ -44,10 +46,10 @@ construction.
 
 | Page | For |
 |---|---|
-| [Quickstart](doc/quickstart.md) | installing and seeing a comment arrive |
-| [What gets captured](doc/what-gets-captured.md) | every field that leaves the device, and the privacy statement |
-| [Troubleshooting](doc/troubleshooting.md) | no bubble, `UNKNOWN` screens, blank screenshots |
-| [Self-hosting](doc/self-hosting.md) | pointing it at your own backend |
+| [Quickstart](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/quickstart.md) | installing and seeing a comment arrive |
+| [What gets captured](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/what-gets-captured.md) | every field that leaves the device, and the privacy statement |
+| [Troubleshooting](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/troubleshooting.md) | no bubble, `UNKNOWN` screens, blank screenshots |
+| [Self-hosting](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/self-hosting.md) | pointing it at your own backend |
 
 ## Screen names, whatever your router
 
