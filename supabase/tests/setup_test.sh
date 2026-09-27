@@ -53,6 +53,7 @@ expect "exits 0"                               '[ $code -eq 0 ]'
 order="$(grep -oE '^supabase (link|db push|functions deploy)' "$LOG" | tr '\n' ',')"
 expect "link, then push, then deploy"          '[ "$order" = "supabase link,supabase db push,supabase functions deploy," ]'
 expect "push includes every migration"         'grep -q "db push --linked --include-all" "$LOG"'
+expect "push never waits on a prompt"          'grep -q "db push .*--yes" "$LOG"'
 expect "deploy skips the JWT check"            'grep -q "functions deploy ingest --no-verify-jwt --project-ref $REF" "$LOG"'
 expect "link and push get the password"        '[ "$(grep -cE "^supabase (link|db push).*pw=set" "$LOG")" = 2 ]'
 expect "the password is never an argument"     '! grep -q hunter2-secret "$LOG"'
@@ -67,6 +68,20 @@ echo "==> a dashboard set up for another project is kept"
 echo '{"SUPABASE_URL": "https://otherprojectrefxxxx.supabase.co"}' > "$DEFINES"
 SUPABASE_DB_PASSWORD=x "$SETUP" --project-ref $REF >/dev/null 2>&1
 expect "old settings saved as .bak"            'grep -q otherprojectrefxxxx "$DEFINES.bak"'
+
+echo "==> a project with only the newer keys"
+cat > "$T/bin/supabase" <<'SH'
+#!/usr/bin/env bash
+echo "supabase $* | pw=${SUPABASE_DB_PASSWORD:+set}" >> "$CALLS"
+case "$1 $2" in
+  "projects api-keys") echo '[{"name":"default","type":"secret","api_key":"SECRET-new"},{"name":"default","type":"publishable","api_key":"sb_publishable_xyz"}]' ;;
+esac
+exit 0
+SH
+chmod +x "$T/bin/supabase"
+SUPABASE_DB_PASSWORD=x "$SETUP" --project-ref $REF >/dev/null 2>&1
+expect "falls back to the publishable key"     'grep -q sb_publishable_xyz "$DEFINES"'
+expect "  and never the new secret key"        '! grep -q SECRET-new "$DEFINES"'
 
 echo "==> backend only"
 : > "$LOG"

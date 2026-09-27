@@ -80,7 +80,9 @@ run supabase link --project-ref "$REF"
 step "Applying migrations ($(ls supabase/migrations/*.sql | wc -l | tr -d ' ') files)"
 # 0001 is not idempotent on its own, but push records what it applied, so a
 # re-run only sends what is missing.
-run supabase db push --linked --include-all
+# --yes: the CLI otherwise stops to ask "push these migrations?". Found on the
+# first real run (27 Sep); a one-command setup must not wait on a keypress.
+run supabase db push --linked --include-all --yes
 
 step "Deploying the ingest function"
 # --no-verify-jwt: the SDK authenticates with the project key in the body, not
@@ -110,11 +112,15 @@ if [ "$DASHBOARD" -eq 1 ]; then
     keys="$(supabase projects api-keys --project-ref "$REF" -o json)"
     ANON="$(printf '%s' "$keys" | python3 -c '
 import json, sys
-for k in json.load(sys.stdin):
-    if k.get("name") == "anon":
-        print(k.get("api_key", "")); break
+keys = json.load(sys.stdin)
+# The legacy anon key where the project still has one; otherwise the newer
+# publishable key, which does the same job for a browser client. Never a
+# secret or service_role key.
+pick = [k for k in keys if k.get("name") == "anon"] or \
+       [k for k in keys if k.get("type") == "publishable"]
+print(pick[0].get("api_key", "") if pick else "")
 ')"
-    [ -n "$ANON" ] || die "could not read the anon key for $REF."
+    [ -n "$ANON" ] || die "could not read a public (anon or publishable) key for $REF."
     defines="$DASH_DIR/dart_defines.local.json"
     if [ -f "$defines" ] && ! grep -q "$REF" "$defines"; then
       cp "$defines" "$defines.bak"
