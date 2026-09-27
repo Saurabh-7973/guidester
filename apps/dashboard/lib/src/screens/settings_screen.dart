@@ -10,6 +10,7 @@ import '../data/project_repository.dart';
 import '../data/team_repository.dart';
 import '../theme/tokens.dart';
 import '../widgets/controls.dart';
+import '../widgets/notify_panel.dart';
 import '../widgets/team_panel.dart';
 import 'onboarding_screen.dart' show CodeBlock, installSnippet;
 
@@ -330,6 +331,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     final team = widget.team;
     final id = widget.projectId;
+    final notify = team == null || id == null || !(_role?.managesTeam ?? false)
+        ? null
+        : NotifyPanel(repository: team, projectId: id);
     final teamPanel = team == null || id == null
         ? null
         : TeamPanel(
@@ -365,7 +369,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.only(top: 58, bottom: 80),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [row, const SizedBox(height: 48), teamPanel],
+              children: [
+                row,
+                const SizedBox(height: 48),
+                teamPanel,
+                if (notify != null) ...[const SizedBox(height: 48), notify],
+              ],
             ),
           );
         }
@@ -380,6 +389,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ..._install(),
               ..._danger(),
               if (teamPanel != null) ...[const SizedBox(height: 40), teamPanel],
+              if (notify != null) ...[const SizedBox(height: 40), notify],
             ],
           ),
         );

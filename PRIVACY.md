@@ -72,7 +72,11 @@ Also true, and worth stating plainly in the listing:
   reaching people outside your team — the same argument the screenshot already
   makes.
 - Data is **not** sold, and is not shared with third parties beyond the Supabase
-  project you control.
+  project you control, with one exception you switch on yourself: if an owner or
+  admin connects a Slack, Discord or Microsoft Teams channel (Settings →
+  Notifications), each new comment's text, screen name, impact, tester name,
+  device, OS and build are posted to that channel. Screenshots, tester ids and
+  device context are never sent. Remove the channel to stop it.
 - Screenshots live in a **private** bucket and are read only through short-lived
   signed URLs.
 - Deletion is supported: one comment, or everything from one tester (see §4).

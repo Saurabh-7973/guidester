@@ -308,6 +308,13 @@ check "no limiter (pre-0012) fails open" 200 '"ok":true' \
 check "  and a ping still answers"     200 '"ping":true' \
   -X POST "${J[@]}" -d '{"api_key":"k","ping":true}'
 
+echo "==> notifications (Slack, Discord, Teams): allowlist, payload, never throws"
+if deno test --quiet "$HERE/../functions/ingest/notify_test.ts" >/tmp/guidester_notify_test.log 2>&1; then
+  echo "  PASS  notify_test.ts"
+else
+  cat /tmp/guidester_notify_test.log; echo "  FAIL  notify_test.ts"; FAILED=1
+fi
+
 echo
 if [ "$FAILED" -eq 0 ]; then
   echo "ALL CHECKS PASSED"

@@ -17,6 +17,7 @@ class FakeTeam implements TeamRepository {
   final invited = <TeamInvite>[];
   int accepted = 0;
   final removed = <String>[];
+  String? hook;
 
   @override
   Future<int> acceptInvites() async => ++accepted;
@@ -69,4 +70,10 @@ class FakeTeam implements TeamRepository {
     removed.add(userId);
     people.removeWhere((m) => m.userId == userId);
   }
+
+  @override
+  Future<String?> webhook(String projectId) async => hook;
+
+  @override
+  Future<void> setWebhook(String projectId, String? url) async => hook = url;
 }

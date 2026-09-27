@@ -272,6 +272,7 @@ void main() {
       expect(find.text('Revoke'), findsNothing);
       expect(find.text('Delete project'), findsNothing);
       expect(find.text('Team'), findsOneWidget);
+      expect(find.text('Notifications'), findsNothing, reason: 'a credential');
     });
 
     testWidgets('an admin manages keys but cannot delete the project', (
@@ -284,6 +285,7 @@ void main() {
       );
       expect(find.text('Rotate'), findsOneWidget);
       expect(find.text('Delete project'), findsNothing);
+      expect(find.text('Notifications'), findsOneWidget);
     });
 
     testWidgets('the owner has everything', (tester) async {

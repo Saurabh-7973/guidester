@@ -26,7 +26,9 @@ supabase/
 ```
 
 Everything runs on **your** Supabase project. There is no Guidester server, and nothing
-you or your testers send leaves your project.
+you or your testers send leaves your project, unless you connect a Slack, Discord or
+Teams channel in Settings: then each new comment's text, screen, impact, tester name,
+device and build are posted there (never the screenshot).
 
 ## Security model
 
