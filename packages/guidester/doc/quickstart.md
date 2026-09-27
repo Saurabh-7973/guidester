@@ -35,7 +35,10 @@ Open `http://localhost:8765` in your browser, sign up and confirm your email, th
 last onboarding step shows your **key** and endpoint, ready to paste.
 
 > In Supabase, set **Authentication → URL Configuration → Site URL** to wherever you
-> serve the dashboard, so the confirmation email opens it. To share the dashboard with
+> serve the dashboard, so the confirmation email opens it. While that is
+> `http://localhost:8765`, open the confirmation email **on the same computer**: on a phone,
+> "localhost" is the phone itself and the page cannot be reached. (Your email is confirmed
+> either way; you can simply log in on the computer.) To share the dashboard with
 > your team, upload `build/web` to any static host.
 
 ## 3. Add the package
