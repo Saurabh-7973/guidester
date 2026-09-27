@@ -5,6 +5,11 @@ a screenshot, the screen name, the device, the build, and the error that caused 
 
 ![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/demo.gif)
 
+[![Try it in your browser](https://img.shields.io/badge/Try_it-in_your_browser-2F59ED?style=for-the-badge)](https://saurabh-7973.github.io/guidester/)
+
+Tap the bubble, pin something, send it, and watch it land on the board. It runs the
+real package in your browser; nothing you type leaves it.
+
 ## How it works
 
 For your testers, it is four taps:
