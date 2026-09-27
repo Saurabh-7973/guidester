@@ -62,7 +62,7 @@ class InstallPreview extends StatelessWidget {
   const InstallPreview({super.key});
 
   /// Held to packages/guidester/pubspec.yaml by install_preview_test.
-  static const String dependencyLine = '  guidester: ^0.5.5';
+  static const String dependencyLine = '  guidester: ^0.5.6';
 
   @override
   Widget build(BuildContext context) {

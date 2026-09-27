@@ -1,3 +1,18 @@
+## 0.5.6
+
+- **Web and WebAssembly are supported platforms.** The package no longer imports `dart:io`
+  directly, and on the web it reads the app version from `version.json` and the device
+  from the browser instead of `package_info_plus` and `device_info_plus`, which pulled
+  `dart:io` into web builds. Nothing changes on Android, iOS or desktop.
+- **On the web, the OS field is the browser platform** ("Web · MacIntel"), not the
+  browser's whole user-agent string.
+- **Verified on devices:** a new end-to-end test (`example/integration_test/device_test.dart`)
+  files a comment with a real screenshot on the iOS simulator and the Android emulator.
+- API documentation for the public members that had none, and an example README that says
+  what the example proves.
+- The quick start's local dashboard address is no longer a link (pub.dev scored it as
+  insecure).
+
 ## 0.5.5
 
 - **Try it in your browser:** https://saurabh-7973.github.io/guidester/ runs the example
