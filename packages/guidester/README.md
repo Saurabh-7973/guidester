@@ -5,7 +5,76 @@ a screenshot, the screen name, the device, the build, and the error that caused 
 
 ![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/demo.gif)
 
+## How it works
+
+For your testers, it is four taps:
+
+1. **Tap the blue bubble** in the corner of the test build.
+2. **Tap the spot** that is wrong. A pin drops there.
+3. **Type what's wrong**, pick how bad it is (Blocked, Annoying, Cosmetic), and send.
+4. That's it. The app keeps running underneath the whole time.
+
+On your dashboard the comment arrives with a screenshot and the pin on it, the screen
+name, the device, the build, and the last errors the app threw. When you mark it fixed,
+the tester's bubble shows a badge on their next launch, and they answer *Works now* or
+*Still broken* (with a fresh screenshot).
+
+Your testers' screenshots go to **your own** Supabase project. There is no Guidester
+server in between.
+
+## Quick start
+
+About 15 minutes, once. You need a Flutter app, a free
+[Supabase](https://supabase.com) account, and the
+[Supabase CLI](https://supabase.com/docs/guides/cli).
+
+### 1. Set up your backend (one command)
+
+Create an empty project at [supabase.com/dashboard](https://supabase.com/dashboard). Note
+its **project ref** (the 20 letters in its URL) and the **database password** you chose.
+Then:
+
+```bash
+supabase login
+git clone https://github.com/Saurabh-7973/guidester.git
+cd guidester
+./supabase/setup.sh --project-ref <your-project-ref>
+```
+
+It sets up the database, deploys the function your app sends to, checks it answers, and
+builds your dashboard. It asks for the database password rather than taking it on the
+command line. At the end it prints your **endpoint**:
+
+```
+https://<your-project-ref>.supabase.co/functions/v1/ingest
+```
+
+### 2. Open your dashboard and create a project
+
+```bash
+cd apps/dashboard/build/web && python3 -m http.server 8765
+```
+
+Open <http://localhost:8765>, sign up and confirm your email, then create a project. The
+last onboarding step shows your **key** and endpoint, ready to paste.
+
+> In Supabase, set **Authentication → URL Configuration → Site URL** to wherever you
+> serve the dashboard, so the confirmation email opens it. To share the dashboard with
+> your team, upload `build/web` to any static host.
+
+### 3. Add the package
+
+```bash
+flutter pub add guidester
+```
+
+### 4. Add two things to your app
+
+In `main.dart`:
+
 ```dart
+import 'package:guidester/guidester.dart';
+
 void main() {
   Guidester.init(
     apiKey: const String.fromEnvironment('GUIDESTER_KEY'),
@@ -13,23 +82,72 @@ void main() {
   );
   runApp(const MyApp());
 }
+```
 
-// on your MaterialApp
-builder: (context, child) => GuidesterOverlay(child: child!),
-// Navigator 1.0 named routes (MaterialApp(routes: ...)) only; a Router app
-// (go_router, MaterialApp.router) needs nothing here
-navigatorObservers: [Guidester.observer],
+And on your `MaterialApp` (or `MaterialApp.router`):
+
+```dart
+MaterialApp(
+  builder: (context, child) => GuidesterOverlay(child: child!),
+  // Only if you use named routes with Navigator.pushNamed.
+  // go_router, auto_route and other Router apps need nothing here.
+  navigatorObservers: [Guidester.observer],
+  // ...
+)
+```
+
+**Both are needed.** `init` alone cannot file a comment: the overlay is what draws the
+bubble and takes the screenshot. If you forget it, the console says so.
+
+### 5. Run it with your key
+
+```bash
+flutter run --dart-define=GUIDESTER_KEY=<your key> \
+            --dart-define=GUIDESTER_ENDPOINT=<your endpoint>
+```
+
+Or keep both in a git-ignored file, `guidester.json`:
+
+```json
+{"GUIDESTER_KEY": "<your key>", "GUIDESTER_ENDPOINT": "<your endpoint>"}
 ```
 
 ```bash
-flutter pub add guidester
-flutter run --dart-define=GUIDESTER_KEY=<your key> \
-            --dart-define=GUIDESTER_ENDPOINT=<your ingest URL>
+flutter run --dart-define-from-file=guidester.json
 ```
 
-That is the whole install. Three lines of Dart, two commands. The endpoint is your own
-deployment of the backend in this repository — the package ships no default
-([self-hosting](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/self-hosting.md)).
+### 6. Check it works
+
+- **The dashboard says so.** Onboarding flips to *Connected — Pixel 7, Android 15* (your
+  device) within seconds of the app starting. That means the overlay is really in your
+  app, not just that the key was pasted.
+- **Send one.** Tap the bubble, tap anywhere, type, send. You see *Comment sent*, and the
+  comment is on your board with its screenshot.
+- **The console tells you the screen name** each time you place a pin:
+  `[guidester] screen: HOME (layer 2)`. If it says `UNKNOWN`, see
+  [screen names](#screen-names-whatever-your-router).
+
+Nothing happening? Every misconfiguration prints one `[guidester]` line in the console
+saying what to fix. The
+[troubleshooting guide](https://github.com/Saurabh-7973/guidester/blob/main/packages/guidester/doc/troubleshooting.md)
+covers each one.
+
+### 7. Give it to your testers
+
+```bash
+flutter build apk --dart-define-from-file=guidester.json
+```
+
+Share that APK (or upload it to an internal testing track). Your public release is built
+**without** the defines, so Guidester is switched off in it: no bubble, no capture, no
+network call.
+
+> **Android release builds need the internet permission.** Flutter adds it to debug builds
+> only. If your app makes no other network calls, add
+> `<uses-permission android:name="android.permission.INTERNET"/>` to
+> `android/app/src/main/AndroidManifest.xml`.
+
+## Why it is safe to add
 
 **The key is the switch.** A production build passes no `--dart-define`, so the key is
 empty, so the overlay returns your widget on the first line of `build()` and no capture or
