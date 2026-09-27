@@ -10,6 +10,9 @@ apps/         the Flutter web dashboard
 
 ## Before opening a pull request
 
+`main` only accepts a merge once all four CI checks have passed (backend, SDK, dashboard,
+pub.dev dry run). That applies to the maintainer too.
+
 Everything CI runs, you can run locally. None of it needs a Supabase account,
 Docker, or network access.
 
