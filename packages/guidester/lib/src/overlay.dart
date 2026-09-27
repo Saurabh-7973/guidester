@@ -366,11 +366,12 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
     });
   }
 
-  /// Back to no pin. [discardDraft] is false only for leaving comment mode
-  /// before a pin: the tester never saw the composer, so nothing they wrote
-  /// has been thrown away by them.
+  /// Back to no pin. [discardDraft] is false for leaving comment mode before
+  /// a pin, and for Back with the composer open: in neither has the tester
+  /// thrown away what they wrote.
   void _reset({bool keepCommentMode = true, bool discardDraft = true}) {
     if (discardDraft) unawaited(DraftStore.clear());
+    final hadComposer = _pin != null;
     setState(() {
       _pin = null;
       _shot = null;
@@ -379,6 +380,11 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
         _draft = '';
         _impact = Impact.fallback;
         _restoredFrom = null;
+      } else if (hadComposer && _draft.trim().isNotEmpty) {
+        // Closed with words in it (Back). The next pin may be on another
+        // screen, and the tester is told where these were written, as a
+        // relaunch already tells them. Found recording the demo, 27 Sep.
+        _restoredFrom ??= _screenName;
       }
       _blank = const [];
       _error = null;
