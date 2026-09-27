@@ -21,6 +21,8 @@ class GuidesterComposer extends StatefulWidget {
     this.blankWarning,
     this.onChanged,
     this.restoredFrom,
+    this.onMarkup,
+    this.marks = 0,
   });
 
   final String screenName;
@@ -46,6 +48,13 @@ class GuidesterComposer extends StatefulWidget {
   /// The screen an unsent comment brought back from an earlier launch was
   /// written on, or null when this comment is new.
   final String? restoredFrom;
+
+  /// Opens the screenshot to draw on. Null hides the button: no screenshot
+  /// was captured, so there is nothing to mark.
+  final VoidCallback? onMarkup;
+
+  /// Strokes already drawn, for the button's label.
+  final int marks;
 
   @override
   State<GuidesterComposer> createState() => _GuidesterComposerState();
@@ -190,28 +199,42 @@ class _GuidesterComposerState extends State<GuidesterComposer> {
             ),
           ),
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Semantics(
-              button: true,
-              enabled: canSend,
-              label: 'Send comment',
-              child: FilledButton.icon(
-                // Guarded by `sending`: their #345 has shipped duplicate
-                // reports on double-tap since Jan 2025.
-                onPressed: canSend
-                    ? () => widget.onSend(_controller.text.trim(), _impact)
-                    : null,
-                icon: widget.sending
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send, size: 16),
-                label: Text(widget.sending ? 'Sending' : 'Send'),
+          Row(
+            children: [
+              if (widget.onMarkup != null)
+                TextButton.icon(
+                  key: const ValueKey('guidester-markup'),
+                  onPressed: widget.sending ? null : widget.onMarkup,
+                  icon: Icon(
+                    widget.marks == 0 ? Icons.draw_outlined : Icons.check,
+                    size: 16,
+                  ),
+                  label: Text(
+                    widget.marks == 0 ? 'Mark up screenshot' : 'Marked up',
+                  ),
+                ),
+              const Spacer(),
+              Semantics(
+                button: true,
+                enabled: canSend,
+                label: 'Send comment',
+                child: FilledButton.icon(
+                  // Guarded by `sending`: their #345 has shipped duplicate
+                  // reports on double-tap since Jan 2025.
+                  onPressed: canSend
+                      ? () => widget.onSend(_controller.text.trim(), _impact)
+                      : null,
+                  icon: widget.sending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send, size: 16),
+                  label: Text(widget.sending ? 'Sending' : 'Send'),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
