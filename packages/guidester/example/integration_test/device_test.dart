@@ -8,6 +8,7 @@
 // screenshot really rendering, device_info and package_info really answering,
 // and the tap, pin, type and send flow on the platform's own text input.
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:example/main.dart';
 import 'package:flutter/foundation.dart';
@@ -98,5 +99,58 @@ void main() {
     // Sent, so the composer closed. (The "Comment sent" toast lasts two
     // seconds and has usually gone by the time the name prompt has settled.)
     expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('a mark drawn on the device is in the screenshot it sends', (
+    tester,
+  ) async {
+    final network = _Capture();
+    // Same init as the first test: a fresh one per test run is not needed,
+    // and init twice is refused.
+    await tester.pumpWidget(ExampleApp(client: ApiClient(client: network)));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+
+    await tester.tap(find.byIcon(Icons.chat_bubble_outline));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Go to /checkout')));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+
+    await tester.tap(find.text('Mark up screenshot'));
+    await tester.pumpAndSettle();
+    final canvas = tester.getRect(
+      find.byKey(const ValueKey('guidester-markup-canvas')),
+    );
+    // A horizontal line across the middle of the capture.
+    final from = Offset(canvas.left + canvas.width * 0.2, canvas.center.dy);
+    await tester.dragFrom(from, Offset(canvas.width * 0.6, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(find.text('Marked up'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'marked on a device');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    if (find.text('Continue').evaluate().isNotEmpty) {
+      await tester.enterText(find.byType(TextField), 'Device Test');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+    }
+
+    final comment = network.sent.firstWhere(
+      (r) => r['body'] == 'marked on a device',
+    );
+    final png = base64Decode(comment['screenshot_b64'] as String);
+    final codec = await ui.instantiateImageCodec(png);
+    final image = (await codec.getNextFrame()).image;
+    final raw = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final bytes = raw!.buffer.asUint8List();
+    final i = ((image.height ~/ 2) * image.width + image.width ~/ 2) * 4;
+    // The ink is markupInk, #F43F5E: strong red, little green.
+    expect(bytes[i], greaterThan(200), reason: 'red channel on the line');
+    expect(bytes[i + 1], lessThan(120), reason: 'not the app underneath');
+    image.dispose();
   });
 }
