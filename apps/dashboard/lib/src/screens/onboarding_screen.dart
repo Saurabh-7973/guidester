@@ -344,7 +344,7 @@ class _StepName extends StatelessWidget {
           width: 295,
           child: GField(
             controller: controller,
-            hint: 'Snapdrop',
+            hint: 'e.g. My App',
             onSubmitted: (_) => onSubmit(),
           ),
         ),
@@ -358,6 +358,15 @@ class _StepName extends StatelessWidget {
             onPressed: controller.text.trim().isEmpty || busy ? null : onSubmit,
           ),
         ),
+        // A dimmed button with no reason given stalled the first real walk
+        // (27 Sep): the hint read as a name already filled in.
+        if (controller.text.trim().isEmpty && !busy) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Type a name to continue.',
+            style: T.supporting.copyWith(color: T.text3),
+          ),
+        ],
         if (error != null) ...[
           const SizedBox(height: 12),
           SizedBox(
@@ -623,6 +632,13 @@ class CodeBlock extends StatefulWidget {
 
 class _CodeBlockState extends State<CodeBlock> {
   bool _copied = false;
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -647,15 +663,28 @@ class _CodeBlockState extends State<CodeBlock> {
             // wrap first is the one carrying the key. It scrolls sideways,
             // and the Copy button is the path that does not involve reading
             // it at all.
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SelectableText(
-                widget.code,
-                style: T.code.copyWith(
-                  color: T.text1,
-                  height: widget.lineHeight == null
-                      ? 1.38
-                      : widget.lineHeight! / T.code.fontSize!,
+            //
+            // The scrollbar stays visible: without it, a key running past the
+            // edge read as a broken box on the first real walk (27 Sep), not
+            // as something that scrolls.
+            child: RawScrollbar(
+              controller: _scroll,
+              thumbVisibility: true,
+              thumbColor: T.text3,
+              thickness: 4,
+              radius: const Radius.circular(2),
+              child: SingleChildScrollView(
+                controller: _scroll,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(bottom: 10),
+                child: SelectableText(
+                  widget.code,
+                  style: T.code.copyWith(
+                    color: T.text1,
+                    height: widget.lineHeight == null
+                        ? 1.38
+                        : widget.lineHeight! / T.code.fontSize!,
+                  ),
                 ),
               ),
             ),
