@@ -72,12 +72,22 @@ class BlockedOn {
 
   static String? fromWire(String? v) => (v == null || v.isEmpty) ? null : v;
 
-  /// `third-party` reads as "Third party", `master data` as "Master data".
+  /// `third-party` reads as "Third party", `master data` as "Master data",
+  /// `qa` as "QA".
   static String label(String value) {
-    final spaced = value.replaceAll('-', ' ').replaceAll('_', ' ').trim();
-    if (spaced.isEmpty) return spaced;
-    return spaced[0].toUpperCase() + spaced.substring(1);
+    final words = value
+        .replaceAll('-', ' ')
+        .replaceAll('_', ' ')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .map((w) => _acronyms.contains(w.toLowerCase()) ? w.toUpperCase() : w)
+        .join(' ');
+    if (words.isEmpty) return words;
+    return words[0].toUpperCase() + words.substring(1);
   }
+
+  static const Set<String> _acronyms = {'qa', 'ui', 'ux', 'api', 'ios', 'sdk'};
 }
 
 /// One entry in a comment's history.

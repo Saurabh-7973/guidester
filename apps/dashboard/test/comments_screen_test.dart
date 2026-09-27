@@ -177,16 +177,16 @@ void main() {
 
     // §6: collapsed by default. It is the answer to "which device were you
     // on?", but it is not what you read first.
-    expect(find.text('text_scale_factor'), findsNothing);
+    expect(find.text('Text size'), findsNothing);
     await tester.tap(find.text('Show device context'));
     await tester.pumpAndSettle();
 
-    expect(find.text('text_scale_factor'), findsOneWidget);
-    expect(find.text('1.35'), findsOneWidget);
+    expect(find.text('Text size'), findsOneWidget);
+    expect(find.text('1.35×'), findsOneWidget);
     expect(find.text('dark'), findsOneWidget);
     expect(find.text('/home → /cart'), findsOneWidget);
     // A key added by a newer SDK must still appear, with no dashboard change.
-    expect(find.text('some_future_key'), findsOneWidget);
+    expect(find.text('Some future key'), findsOneWidget);
   });
 
   testWidgets('Next moves the detail selection to the following comment', (
