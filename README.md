@@ -13,6 +13,34 @@ device, the build, and the errors the app threw.
 **Get started:** the [Quick start](packages/guidester/README.md#quick-start) takes about 15
 minutes: one command sets up your backend, then two changes to your app.
 
+## What your team gets
+
+- **Testers:** a bubble in the test build. Tap the spot that is wrong, type, pick how bad
+  it is (Blocked, Annoying, Cosmetic), send. Works offline; a draft survives Back.
+- **Developers:** the comment with its screenshot and pin, screen name, device, build,
+  route and the errors the app threw. Verdicts, assignee, notes, keyboard triage, and
+  **Copy as issue** for GitHub, Jira or Linear.
+- **QA:** when a fix is marked, the tester's bubble asks them to retest on their next
+  launch: *Works now* or *Still broken*, with a fresh screenshot. "Fixed" and "verified"
+  are separate, so a fix nobody checked never looks done.
+- **Leads, product, design, support:** a **Status** page for every project: can it ship,
+  what blocks it, what waits for QA, and one list per team (Developers, QA, UI/UX,
+  Product/BA, Backend, Frontend, Third party). **Copy report** pastes into Slack or email.
+- **Everyone:** invite people as admin, member or viewer. New comments can post to a
+  **Slack, Discord or Teams** channel as they arrive.
+
+## How it compares
+
+Checked September 2026; follow the links, prices change.
+
+| | Flutter screenshot in-app | Where reports live | Price |
+|---|---|---|---|
+| **Guidester** | Yes, with the tap pinned | Your own Supabase project | Free, MIT; no seats |
+| [Firebase App Distribution feedback](https://firebase.google.com/docs/app-distribution/collect-feedback-from-testers) | Android SDK only; no FlutterFire support yet ([open issue](https://github.com/firebase/flutterfire/issues/11607)) | Google's console | Free |
+| [Luciq (was Instabug)](https://www.instabug.com/pricing) | Yes | Their cloud | By sales call |
+| [Wiredash](https://wiredash.com/pricing) | Yes | Their cloud (on-premise on Business) | Free for 1 member; €29 and €199 a month |
+| [BugHerd](https://bugherd.com), [Marker.io](https://marker.io/pricing), [Userback](https://userback.io/pricing/) | Websites, not Flutter apps | Their cloud | From about $29–50 a month, by seat |
+
 ## What is in this repository
 
 ```
