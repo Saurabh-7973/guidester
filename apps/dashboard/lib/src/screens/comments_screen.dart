@@ -43,9 +43,14 @@ class CommentsScreen extends StatefulWidget {
     this.lastLaunch,
     this.onSetup,
     this.onOpenSettings,
+    this.refreshEvery = const Duration(seconds: 30),
   });
 
   final CommentRepository repository;
+
+  /// How often an open board looks for comments that arrived since it
+  /// loaded. A tester's comment used to appear only after a reload.
+  final Duration refreshEvery;
 
   /// Which project's board this is. Null falls back to the `PROJECT_ID`
   /// dart-define, which is how a single-project build was configured before
@@ -136,6 +141,38 @@ class _CommentsScreenState extends State<CommentsScreen>
   void initState() {
     super.initState();
     _load();
+    _poll = Timer.periodic(widget.refreshEvery, (_) => _refreshQuietly());
+  }
+
+  Timer? _poll;
+
+  /// The list again, without the skeleton: new comments slide in and the one
+  /// being read stays selected. Skipped while anything else owns the list:
+  /// the first load, an offline retry, an error, or an Undo window, where a
+  /// fresh fetch would bring a deleted comment back for a moment.
+  Future<void> _refreshQuietly() async {
+    if (!mounted || _loading || _offline || _error != null) return;
+    if (_pendingDeletes.isNotEmpty) return;
+    try {
+      final comments = await widget.repository.fetch(
+        projectId: widget.projectId ?? Env.projectId,
+        status: _status,
+        impact: _impactFilter,
+      );
+      if (!mounted || _loading || _pendingDeletes.isNotEmpty) return;
+      final selectedId = _selected?.id;
+      setState(() {
+        _all = comments;
+        if (selectedId != null) {
+          _selected =
+              comments.where((c) => c.id == selectedId).firstOrNull ??
+              _selected;
+        }
+      });
+      unawaited(_loadBoard());
+    } on RepositoryException {
+      // The next tick tries again; the normal load path owns error states.
+    }
   }
 
   @override
@@ -144,6 +181,7 @@ class _CommentsScreenState extends State<CommentsScreen>
       unawaited(_commitDelete(id));
     }
     _retry?.cancel();
+    _poll?.cancel();
     _tabs.dispose();
     super.dispose();
   }
