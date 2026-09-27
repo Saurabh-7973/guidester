@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/comment.dart';
+import '../models/issue_export.dart';
 import '../theme/tokens.dart';
 import 'context_panel.dart';
 import 'error_panel.dart';
@@ -65,7 +66,6 @@ class _CommentDetailState extends State<CommentDetail> {
   bool _contextOpen = false;
 
   final _scroll = ScrollController();
-  bool _copied = false;
 
   @override
   void didUpdateWidget(CommentDetail old) {
@@ -74,7 +74,6 @@ class _CommentDetailState extends State<CommentDetail> {
     // opened with its own title scrolled away.
     if (old.comment.id != widget.comment.id) {
       if (_scroll.hasClients) _scroll.jumpTo(0);
-      _copied = false;
     }
   }
 
@@ -82,11 +81,6 @@ class _CommentDetailState extends State<CommentDetail> {
   void dispose() {
     _scroll.dispose();
     super.dispose();
-  }
-
-  Future<void> _copyLink() async {
-    await Clipboard.setData(ClipboardData(text: widget.link!));
-    if (mounted) setState(() => _copied = true);
   }
 
   void _openLightbox() {
@@ -281,37 +275,30 @@ class _CommentDetailState extends State<CommentDetail> {
         ],
       ),
     ],
-    if (widget.link != null) ...[
-      const SizedBox(height: 8),
-      Semantics(
-        button: true,
-        label: _copied ? 'Link copied' : 'Copy link',
-        excludeSemantics: true,
-        onTap: _copyLink,
-        child: InkWell(
-          onTap: _copyLink,
-          borderRadius: BorderRadius.circular(T.rControl),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _copied ? Icons.check : Icons.link,
-                  size: 14,
-                  color: T.text3,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _copied ? 'Link copied' : 'Copy link',
-                  style: T.supporting.copyWith(color: T.text3),
-                ),
-              ],
-            ),
+    const SizedBox(height: 8),
+    Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 4,
+      children: [
+        if (widget.link != null)
+          _CopyAction(
+            key: ValueKey('copy-link-${widget.comment.id}'),
+            label: 'Copy link',
+            done: 'Link copied',
+            icon: Icons.link,
+            text: () => widget.link!,
           ),
+        // For the tracker the team already lives in: the facts a developer
+        // asks the tester for, as Markdown GitHub, Jira and Linear all read.
+        _CopyAction(
+          key: ValueKey('copy-issue-${widget.comment.id}'),
+          label: 'Copy as issue',
+          done: 'Issue copied',
+          icon: Icons.bug_report_outlined,
+          text: () => issueMarkdown(widget.comment, link: widget.link),
         ),
-      ),
-    ],
+      ],
+    ),
   ];
 
   Widget _shot() => MouseRegion(
@@ -552,4 +539,59 @@ class _DangerButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Copies text and says so in place, until the comment changes (the key
+/// carries the comment id).
+class _CopyAction extends StatefulWidget {
+  const _CopyAction({
+    super.key,
+    required this.label,
+    required this.done,
+    required this.icon,
+    required this.text,
+  });
+
+  final String label;
+  final String done;
+  final IconData icon;
+  final String Function() text;
+
+  @override
+  State<_CopyAction> createState() => _CopyActionState();
+}
+
+class _CopyActionState extends State<_CopyAction> {
+  bool _copied = false;
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: widget.text()));
+    if (mounted) setState(() => _copied = true);
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: _copied ? widget.done : widget.label,
+    excludeSemantics: true,
+    onTap: _copy,
+    child: InkWell(
+      onTap: _copy,
+      borderRadius: BorderRadius.circular(T.rControl),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_copied ? Icons.check : widget.icon, size: 14, color: T.text3),
+            const SizedBox(width: 6),
+            Text(
+              _copied ? widget.done : widget.label,
+              style: T.supporting.copyWith(color: T.text3),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
