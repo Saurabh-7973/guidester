@@ -1,11 +1,16 @@
-## Unreleased
+## 0.5.7
 
 - **Draw on the screenshot.** In the composer, *Mark up screenshot* opens the capture full
   screen with the pin shown; the tester draws with a finger (Undo, Clear), and the marks
   are burned into the image that is sent. The capture as taken is kept, so drawing again
   starts from it. A failed burn-in sends the plain screenshot; marking never loses a
-  report. Back from the drawing returns to the composer.
-
+  report. Back from the drawing returns to the composer. Checked on the iOS simulator: the
+  mark is in the pixels the device sends.
+- **What gets captured is exact.** The page now lists the launch ping's tester id, the
+  offline queue that stores a comment on the device and sends it later, the answers to
+  "please check this fix", and what a connected Slack, Discord or Teams channel receives.
+- Quick start: open the confirmation email on the computer running the dashboard. The
+  self-hosting guide has the manual commands and what `setup.sh` needs on Windows.
 - README: which platforms are checked on a device, and the web demo linked from the Example
   section.
 
