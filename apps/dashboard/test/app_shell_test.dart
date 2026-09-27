@@ -60,8 +60,10 @@ void main() {
   testWidgets('the tabs are one gap apart', (tester) async {
     await pumpAt1440(tester, host());
     final projects = tester.getRect(find.text('Projects'));
+    final status = tester.getRect(find.text('Status'));
     final settings = tester.getRect(find.text('Settings'));
-    expect(settings.left - projects.right, T.navGap);
+    expect(status.left - projects.right, T.navGap);
+    expect(settings.left - status.right, T.navGap);
   });
 
   testWidgets('the active tab carries accent, weight and an underline', (

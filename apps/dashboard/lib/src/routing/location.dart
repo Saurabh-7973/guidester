@@ -15,6 +15,8 @@ import '../widgets/app_shell.dart';
 ///   /p/:id                       a project's board
 ///   /p/:id/c/:commentId          one comment on it
 ///   /p/:id/settings              that project's settings
+///   /status                      every project's status, at a glance
+///   /p/:id/status                one project's status report
 ///
 /// A board also carries `?status=`, `?impact=` and `?screen=`, left out at their defaults
 /// so the common link stays short.
@@ -37,6 +39,9 @@ class DashboardLocation {
 
   const DashboardLocation.settings({String? projectId})
     : this._(tab: ShellTab.settings, projectId: projectId);
+
+  const DashboardLocation.status({String? projectId})
+    : this._(tab: ShellTab.status, projectId: projectId);
 
   const DashboardLocation.board(
     String projectId, {
@@ -76,6 +81,10 @@ class DashboardLocation {
         return const DashboardLocation.newProject();
       case ['settings']:
         return const DashboardLocation.settings();
+      case ['status']:
+        return const DashboardLocation.status();
+      case ['p', final id, 'status']:
+        return DashboardLocation.status(projectId: id);
       case ['p', final id, 'settings']:
         return DashboardLocation.settings(projectId: id);
       case ['p', final id]:
@@ -111,6 +120,9 @@ class DashboardLocation {
     if (onboarding) return '/projects/new';
     if (tab == ShellTab.settings) {
       return projectId == null ? '/settings' : '/p/$projectId/settings';
+    }
+    if (tab == ShellTab.status) {
+      return projectId == null ? '/status' : '/p/$projectId/status';
     }
     if (projectId == null) return '/projects';
     final base = commentId == null

@@ -17,6 +17,7 @@ import 'comments_screen.dart';
 import 'onboarding_screen.dart';
 import 'projects_screen.dart';
 import 'settings_screen.dart';
+import 'status_screen.dart';
 
 /// Everything behind the login: the shell, and what sits inside it.
 ///
@@ -215,6 +216,38 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       onBackToProjects: () => _go(const DashboardLocation.projects()),
+      onOpenReport: widget.repository is ReportSource
+          ? () => _go(DashboardLocation.status(projectId: project.id))
+          : null,
+    );
+  }
+
+  Widget _status() {
+    final source = widget.repository;
+    final projects = _projects;
+    if (source is! ReportSource) {
+      return const _Missing(
+        message: 'Status reports need the live database.',
+        onBack: null,
+      );
+    }
+    if (projects == null) {
+      return _error == null
+          ? const StatusSkeleton()
+          : _Missing(
+              message: _error!,
+              onBack: () => _go(const DashboardLocation.projects()),
+            );
+    }
+    return StatusScreen(
+      source: source as ReportSource,
+      projects: [for (final p in projects) (id: p.id, name: p.name)],
+      projectId: _loc.projectId,
+      onOpenReport: (id) => _go(DashboardLocation.status(projectId: id)),
+      onOpenBoard: (projectId, commentId) =>
+          _go(DashboardLocation.board(projectId, commentId: commentId)),
+      linkFor: (id) =>
+          '${pageUrl()}#${DashboardLocation.status(projectId: id).path}',
     );
   }
 
@@ -247,14 +280,17 @@ class _HomeScreenState extends State<HomeScreen> {
       tab: _tab,
       // Projects goes back to the list. Settings keeps the project you were
       // in, so its key is the one shown.
-      onTabSelected: (t) => _go(
-        t == ShellTab.settings
-            ? DashboardLocation.settings(projectId: _loc.projectId)
-            : const DashboardLocation.projects(),
-      ),
+      onTabSelected: (t) => _go(switch (t) {
+        ShellTab.settings => DashboardLocation.settings(
+          projectId: _loc.projectId,
+        ),
+        // From inside a project, its own report; from anywhere else, all.
+        ShellTab.status => DashboardLocation.status(projectId: _loc.projectId),
+        ShellTab.projects => const DashboardLocation.projects(),
+      }),
       userName: _name,
       onLogOut: _signOut,
-      fullWidth: _loc.isBoard,
+      fullWidth: _loc.isBoard || _tab == ShellTab.status,
       trailing: _tab == ShellTab.projects && !_loc.isBoard && !_onboarding
           ? GButton(
               label: 'New project',
@@ -292,6 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onSettings: (p) => _go(DashboardLocation.settings(projectId: p.id)),
         ),
         ShellTab.projects => _board(),
+        ShellTab.status => _status(),
       },
     );
   }
@@ -373,7 +410,7 @@ class _Missing extends StatelessWidget {
   const _Missing({required this.message, required this.onBack});
 
   final String message;
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -381,8 +418,10 @@ class _Missing extends StatelessWidget {
     child: Column(
       children: [
         Text(message, style: T.body.copyWith(color: T.text3)),
-        const SizedBox(height: 12),
-        TextButton(onPressed: onBack, child: const Text('Back to Projects')),
+        if (onBack != null) ...[
+          const SizedBox(height: 12),
+          TextButton(onPressed: onBack, child: const Text('Back to Projects')),
+        ],
       ],
     ),
   );

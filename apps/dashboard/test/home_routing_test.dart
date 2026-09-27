@@ -16,7 +16,7 @@ import 'package:go_router/go_router.dart';
 /// The dashboard behind real URLs. Found 25 Sep in Chrome: back left the app,
 /// reload dropped to the project list, and a comment could not be linked,
 /// because every screen lived at `/`.
-class _Comments implements CommentRepository {
+class _Comments implements CommentRepository, ReportSource {
   final rows = <CommentStatus, List<Comment>>{
     CommentStatus.open: [
       _c('c1', 'first open', Impact.blocked),
@@ -53,6 +53,11 @@ class _Comments implements CommentRepository {
     (rows[status] ??= []).insert(0, moved);
     return moved;
   }
+
+  @override
+  Future<Map<String, List<Comment>>> reportComments({
+    String? projectId,
+  }) async => {'p1': rows.values.expand((l) => l).toList()};
 
   @override
   Future<String?> signedScreenshotUrl(String path) async => null;
@@ -332,5 +337,43 @@ void main() {
       findsNothing,
     );
     expect(_paneShows(tester, 'long done'), isTrue);
+  });
+
+  testWidgets('the Status tab shows every project, then one report', (
+    tester,
+  ) async {
+    final r = await _pumpAt(tester, '/projects');
+    await tester.tap(find.text('Status'));
+    await tester.pumpAndSettle();
+    expect(_where(r), '/status');
+    expect(find.text('Snapdrop'), findsOneWidget);
+    expect(find.text('Sahaj'), findsOneWidget);
+    // c1 is open and blocking.
+    expect(find.text('Not ready to release'), findsOneWidget);
+
+    await tester.tap(find.text('Snapdrop'));
+    await tester.pumpAndSettle();
+    expect(_where(r), '/p/p1/status');
+
+    await tester.tap(find.text('first open').first);
+    await tester.pumpAndSettle();
+    expect(_where(r), '/p/p1/c/c1');
+    expect(_paneShows(tester, 'first open'), isTrue);
+  });
+
+  testWidgets('a board links to its own report', (tester) async {
+    final r = await _pumpAt(tester, '/p/p1');
+    await tester.tap(find.byKey(const ValueKey('open-status-report')));
+    await tester.pumpAndSettle();
+    expect(_where(r), '/p/p1/status');
+  });
+
+  testWidgets('Status from inside a project opens that project', (
+    tester,
+  ) async {
+    final r = await _pumpAt(tester, '/p/p1');
+    await tester.tap(find.text('Status'));
+    await tester.pumpAndSettle();
+    expect(_where(r), '/p/p1/status');
   });
 }

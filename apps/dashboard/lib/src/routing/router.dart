@@ -86,7 +86,9 @@ GoRouter buildRouter({
         '/projects',
         '/projects/new',
         '/settings',
+        '/status',
         '/p/:projectId',
+        '/p/:projectId/status',
         '/p/:projectId/settings',
         '/p/:projectId/c/:commentId',
       ])
