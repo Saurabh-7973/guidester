@@ -1,7 +1,8 @@
 # What gets captured
 
-Everything on this page leaves the device when a tester taps send. Nothing on it leaves at
-any other time.
+Everything on this page is what the SDK sends or keeps. Most of it leaves the device when a
+tester taps **Send**; the exceptions are listed under each heading, and nothing leaves from a
+build that passes no key.
 
 ## Only on send
 
@@ -9,9 +10,15 @@ No screenshot is taken, no context gathered and no request made until the tester
 **Send**. Tapping the bubble arms comment mode; tapping the screen captures a frame *into
 memory*; sending is what uploads. Cancel and it is discarded.
 
-The one exception is the launch ping: when the overlay mounts it tells the backend that
-this key is alive, carrying the device model, OS version and app version. No screenshot, no
-comment. It is what makes the dashboard's connection check honest.
+Two exceptions:
+
+- **The launch ping.** When the overlay mounts it tells the backend that this key is alive,
+  carrying the device model, OS version, app version and the tester id (so the answer can
+  list the fixes waiting for this tester to check). No screenshot, no comment. It is what
+  makes the dashboard's connection check honest.
+- **A comment sent without a connection** is kept on the device and sent later, on its own:
+  on the next launch, when the app returns to the foreground, or after another comment goes
+  through. See *Kept on the device* below.
 
 ## The comment
 
@@ -24,12 +31,16 @@ comment. It is what makes the dashboard's connection check honest.
 | Screenshot | one PNG of the screen, **excluding** the overlay's own chrome |
 | Tester name | typed once, stored on the device, not an account |
 | Tester id | a random value generated on the device |
+| Comment id | a random value made per comment, so a retried send is stored once |
+| Environment | the `GUIDESTER_ENV` define, when the build sets one (`uat`, `staging`) |
+| Blank regions | where the screenshot is blank because a platform view (map, web view, camera) could not be captured, and which kind |
 
 ## The device
 
 Model, manufacturer, OS version, whether it is a physical device or an emulator, screen
 size, pixel ratio, **text scale factor**, **platform brightness**, orientation, locale,
-timezone offset, app version, and the last five screens visited.
+timezone offset, app version, build number, package name, the Guidester SDK version, and
+the last five screens visited.
 
 Those middle three close a surprising number of reports on their own. "It looks broken" is
 usually a large font scale, dark mode, or an emulator.
@@ -47,6 +58,19 @@ still crashes and your crash reporter still sees what it saw.
 **Read this twice before shipping a test build.** An exception message can quote your app's
 own data. `Invalid argument: user@example.com` is an ordinary Dart error, and the SDK cannot
 tell that string from any other. Nothing redacts it.
+
+## Answers to "please check this fix"
+
+When a developer marks a report fixed, the tester's next launch shows it. Answering *Works
+now* or *Still broken* sends the report's id, the tester id and the answer. *Still broken*
+then opens the composer, and what the tester sends is an ordinary comment.
+
+## Kept on the device
+
+- The tester's name and the random tester id, until the app's data is cleared.
+- An unsent draft, until it is sent or discarded.
+- **Comments that could not be sent**, each with its screenshot, as files in the app's own
+  storage: at most 20, for at most 14 days, deleted once sent. Not on the web.
 
 ## What is never captured
 
