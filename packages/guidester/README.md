@@ -303,13 +303,16 @@ saying "connected" about that app would be the exact false pass the check exists
   best-effort by design, and **an obfuscated build has no layer 4 at all** — every screen it
   would have named reports `UNKNOWN`. Layers 1 to 3 survive obfuscation because they read
   strings rather than class names.
-- v0 targets Android and iOS.
+- Android and iOS are the targets, and both are checked on a device before a release
+  (`example/integration_test/device_test.dart`). The web works too (the demo above runs
+  on it), without the offline queue.
 - Error capture starts at `Guidester.init`, so anything thrown before that call is missed.
 
 ## Example
 
 `example/` runs the same SDK under two routing styles in one app — named `Navigator` routes
-and GoRouter — and prints the resolved name and layer on every screen.
+and GoRouter — and prints the resolved name and layer on every screen. The same app runs
+[in your browser](https://saurabh-7973.github.io/guidester/), with a board beside it.
 
 ## Licence
 
