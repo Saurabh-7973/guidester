@@ -1,3 +1,10 @@
+## Unreleased
+
+- **A draft closed with Back says where it was written.** Typing on one screen, pressing
+  Back, and pinning on another reopened the draft with no word that it came from
+  elsewhere. It now shows "Unsent comment from CHECKOUT", as a relaunch already did. The
+  comment is still filed under the screen it is pinned on when sent.
+
 ## 0.5.4
 
 Documentation only; no code changes.
