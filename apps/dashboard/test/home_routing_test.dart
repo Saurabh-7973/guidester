@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'support/team_fake.dart';
+
 /// The dashboard behind real URLs. Found 25 Sep in Chrome: back left the app,
 /// reload dropped to the project list, and a comment could not be linked,
 /// because every screen lived at `/`.
@@ -119,7 +121,12 @@ class _Projects implements ProjectRepository {
     ),
     // Two, so arriving at the list stays on the list (with one, §5.6 row 5
     // opens that project's board).
-    Project(id: 'p2', name: 'Sahaj', createdAt: DateTime(2026, 9, 2)),
+    Project(
+      id: 'p2',
+      name: 'Sahaj',
+      createdAt: DateTime(2026, 9, 2),
+      ownerId: 'someone-else',
+    ),
   ];
 
   @override
@@ -142,7 +149,11 @@ class _Projects implements ProjectRepository {
   Future<void> revoke(String keyId) async {}
 }
 
-Future<GoRouter> _pumpAt(WidgetTester tester, String at) async {
+Future<GoRouter> _pumpAt(
+  WidgetTester tester,
+  String at, {
+  FakeTeam? team,
+}) async {
   tester.view.physicalSize = const Size(1493, 900);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -158,6 +169,8 @@ Future<GoRouter> _pumpAt(WidgetTester tester, String at) async {
       repository: comments,
       projects: projects,
       email: 'dev@example.com',
+      team: team,
+      userId: 'me',
       location: location,
       onNavigate: navigate,
     ),
@@ -375,5 +388,13 @@ void main() {
     await tester.tap(find.text('Status'));
     await tester.pumpAndSettle();
     expect(_where(r), '/p/p1/status');
+  });
+
+  testWidgets('invites are accepted once, before the list, and shared '
+      'projects say so', (tester) async {
+    final team = FakeTeam();
+    await _pumpAt(tester, '/projects', team: team);
+    expect(team.accepted, 1);
+    expect(find.text('Shared with you'), findsOneWidget);
   });
 }

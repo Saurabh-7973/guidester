@@ -34,6 +34,8 @@ class CommentsScreen extends StatefulWidget {
     this.createdBy = 'You',
     this.onBackToProjects,
     this.onOpenReport,
+    this.canDelete = true,
+    this.readOnly = false,
     this.projectTotal,
     this.commentId,
     this.status = CommentStatus.open,
@@ -66,6 +68,12 @@ class CommentsScreen extends StatefulWidget {
 
   /// This project's status report. Null hides the link.
   final VoidCallback? onOpenReport;
+
+  /// Owner and admins (0013). A member triages but does not delete.
+  final bool canDelete;
+
+  /// A viewer: everything shows, nothing changes.
+  final bool readOnly;
 
   /// Every comment in the project, across tabs and filters. Decides whether
   /// the new-project help card is still worth its space. Null when unknown,
@@ -716,6 +724,7 @@ class _CommentsScreenState extends State<CommentsScreen>
   };
 
   void _onSelected(CommentStatus status) {
+    if (widget.readOnly) return;
     final c = _selected;
     if (c == null || c.status == status) return;
     _setStatus(c, status);
@@ -748,10 +757,11 @@ class _CommentsScreenState extends State<CommentsScreen>
             // Picking from the overlay closes it: you opened it to choose.
             if (_railOverlay) setState(() => _railOverlay = false);
           },
-          onMarkInProgress: c.status == CommentStatus.inProgress
+          onMarkInProgress:
+              widget.readOnly || c.status == CommentStatus.inProgress
               ? null
               : () => _setStatus(c, CommentStatus.inProgress),
-          onResolve: c.status == CommentStatus.resolved
+          onResolve: widget.readOnly || c.status == CommentStatus.resolved
               ? null
               : () => _setStatus(c, CommentStatus.resolved),
         );
@@ -770,20 +780,40 @@ class _CommentsScreenState extends State<CommentsScreen>
           onPrev: () => _step(-1),
           onNext: () => _step(1),
           onBack: onBack,
-          workflow: WorkflowPanel(
-            comment: _selected!,
-            events: _events,
-            blockedOnOptions: BlockedOn.defaults,
-            onDevVerdict: (v, {String? build}) => _move(dev: v),
-            onTesterVerdict: (v, {String? build}) => _move(tester: v),
-            onBlockedOn: (v) => _move(blockedOn: v, clearBlockedOn: v == null),
-            onAssign: (who) => _move(assignee: who),
-            onNote: (note) => _move(note: note),
+          workflow: _viewOnly(
+            WorkflowPanel(
+              comment: _selected!,
+              events: _events,
+              blockedOnOptions: BlockedOn.defaults,
+              onDevVerdict: (v, {String? build}) => _move(dev: v),
+              onTesterVerdict: (v, {String? build}) => _move(tester: v),
+              onBlockedOn: (v) =>
+                  _move(blockedOn: v, clearBlockedOn: v == null),
+              onAssign: (who) => _move(assignee: who),
+              onNote: (note) => _move(note: note),
+            ),
           ),
-          onDelete: () => _delete(_selected!),
-          onDeleteTester: _selected!.testerId == null
+          onDelete: widget.canDelete ? () => _delete(_selected!) : null,
+          onDeleteTester: !widget.canDelete || _selected!.testerId == null
               ? null
               : () => _deleteTester(_selected!),
+        );
+
+  /// A viewer sees the verdicts and history as they are, and cannot press
+  /// them. RLS refuses the write anyway; this saves the round trip and the
+  /// error.
+  Widget _viewOnly(Widget panel) => !widget.readOnly
+      ? panel
+      : Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'View only. Ask the owner for member access to triage.',
+              style: T.supporting.copyWith(color: T.text3),
+            ),
+            const SizedBox(height: 8),
+            IgnorePointer(child: Opacity(opacity: 0.6, child: panel)),
+          ],
         );
 
   /// Moves a verdict and records it. One call: the row and its history are

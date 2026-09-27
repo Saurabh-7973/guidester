@@ -11,11 +11,16 @@ class Project {
     required this.createdAt,
     this.total = 0,
     this.unread = 0,
+    this.ownerId,
   });
 
   final String id;
   final String name;
   final DateTime createdAt;
+
+  /// Who owns it. Someone else's id means it was shared with this user
+  /// (0013). Null when not read.
+  final String? ownerId;
 
   /// Comments on the board, and how many of those are still `open`.
   final int total;
@@ -124,7 +129,7 @@ class SupabaseProjectRepository implements ProjectRepository {
     try {
       final rows = await _client
           .from('projects')
-          .select('id, name, created_at')
+          .select('id, name, created_at, owner_id')
           .order('created_at');
       // Two reads, counted in Dart, the same trade `board()` makes: one row
       // per comment beats one count query per project, and RLS already scopes
@@ -170,7 +175,7 @@ class SupabaseProjectRepository implements ProjectRepository {
       final row = await _client
           .from('projects')
           .insert({'owner_id': owner, 'name': name})
-          .select('id, name, created_at')
+          .select('id, name, created_at, owner_id')
           .single();
       final project = _project(row);
       final keys = await this.keys(project.id);
@@ -293,6 +298,7 @@ class SupabaseProjectRepository implements ProjectRepository {
           DateTime.fromMillisecondsSinceEpoch(0),
       total: total[id] ?? 0,
       unread: open[id] ?? 0,
+      ownerId: row['owner_id']?.toString(),
     );
   }
 

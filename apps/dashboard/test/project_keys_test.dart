@@ -1,11 +1,14 @@
 import 'package:dashboard/src/data/comment_repository.dart';
 import 'package:dashboard/src/data/project_repository.dart';
+import 'package:dashboard/src/data/team_repository.dart';
 import 'package:dashboard/src/screens/home_screen.dart';
 import 'package:dashboard/src/screens/settings_screen.dart';
 import 'package:dashboard/src/theme/app_theme.dart';
 import 'package:dashboard/src/widgets/controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/team_fake.dart';
 
 ProjectKey _key({
   String id = 'key-1',
@@ -69,7 +72,11 @@ class _FakeProjects implements ProjectRepository {
   }
 }
 
-Future<void> _pumpSettings(WidgetTester tester, _FakeProjects repo) async {
+Future<void> _pumpSettings(
+  WidgetTester tester,
+  _FakeProjects repo, {
+  FakeTeam? team,
+}) async {
   tester.view.physicalSize = const Size(1440, 752);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -81,6 +88,10 @@ Future<void> _pumpSettings(WidgetTester tester, _FakeProjects repo) async {
           email: 'dev@example.com',
           projects: repo,
           projectId: 'p1',
+          projectName: 'Snapdrop',
+          onProjectDeleted: () {},
+          team: team,
+          myUserId: 'me',
         ),
       ),
     ),
@@ -244,6 +255,41 @@ void main() {
       expect(find.text('Sahaj'), findsOneWidget);
       expect(find.text('Snapdrop'), findsOneWidget);
       expect(find.textContaining('32'), findsOneWidget);
+    });
+  });
+
+  group('by role', () {
+    testWidgets('a member sees the key but cannot rotate, revoke or delete', (
+      tester,
+    ) async {
+      await _pumpSettings(
+        tester,
+        _FakeProjects(),
+        team: FakeTeam(role: TeamRole.member),
+      );
+      expect(find.textContaining('gd_live_'), findsWidgets);
+      expect(find.text('Rotate'), findsNothing);
+      expect(find.text('Revoke'), findsNothing);
+      expect(find.text('Delete project'), findsNothing);
+      expect(find.text('Team'), findsOneWidget);
+    });
+
+    testWidgets('an admin manages keys but cannot delete the project', (
+      tester,
+    ) async {
+      await _pumpSettings(
+        tester,
+        _FakeProjects(),
+        team: FakeTeam(role: TeamRole.admin),
+      );
+      expect(find.text('Rotate'), findsOneWidget);
+      expect(find.text('Delete project'), findsNothing);
+    });
+
+    testWidgets('the owner has everything', (tester) async {
+      await _pumpSettings(tester, _FakeProjects(), team: FakeTeam());
+      expect(find.text('Rotate'), findsOneWidget);
+      expect(find.text('Delete project'), findsWidgets);
     });
   });
 }

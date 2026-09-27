@@ -40,6 +40,11 @@ The SDK never talks to the database. It has no credentials that can reach it.
   via signed URLs.
 - Owners see only their own projects, comments, and screenshots — enforced in both
   directions.
+- **Teams** (migration 0013): the owner invites people by email as admin, member or
+  viewer. An invite becomes access only when someone signs in with that email,
+  confirmed. Members triage; viewers read; only the owner and admins delete or
+  manage keys and the team; only the owner deletes the project. Tested in
+  `supabase/tests/rls_test.sql`, including a member's attempt to promote themselves.
 
 ## Verify it locally
 
