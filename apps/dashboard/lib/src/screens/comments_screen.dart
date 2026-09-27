@@ -160,14 +160,25 @@ class _CommentsScreenState extends State<CommentsScreen>
         impact: _impactFilter,
       );
       if (!mounted || _loading || _pendingDeletes.isNotEmpty) return;
-      final selectedId = _selected?.id;
+      final selected = _selected;
+      final fresh = selected == null
+          ? null
+          : comments.where((c) => c.id == selected.id).firstOrNull;
+      final was = selected == null
+          ? -1
+          : _all.indexWhere((c) => c.id == selected.id);
       setState(() {
         _all = comments;
-        if (selectedId != null) {
-          _selected =
-              comments.where((c) => c.id == selectedId).firstOrNull ??
-              _selected;
+        if (selected == null) return;
+        if (fresh != null) {
+          _selected = fresh;
+          return;
         }
+        // It left this tab on the server while being read: keep it, in its
+        // old place, until the reader moves on. Dropping it closed the pane
+        // mid-edit (27 Sep audit); the next tick after they move on drops it.
+        _all = [...comments]
+          ..insert(was < 0 ? 0 : was.clamp(0, comments.length), selected);
       });
       unawaited(_loadBoard());
     } on RepositoryException {
@@ -320,6 +331,9 @@ class _CommentsScreenState extends State<CommentsScreen>
             ? null
             : (match ?? (shown.isEmpty ? null : shown.first));
       });
+      // The counts row. Loaded beside the list, not after it, and allowed to
+      // fail on its own; until 27 Sep it waited for the first verdict change.
+      unawaited(_loadBoard());
       await _loadScreenshot();
       await _loadEvents();
     } on RepositoryException catch (e) {
