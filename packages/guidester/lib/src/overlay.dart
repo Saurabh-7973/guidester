@@ -31,16 +31,23 @@ import 'ui/retest_list.dart';
 ///
 /// ```dart
 /// MaterialApp(
-///   navigatorObservers: [Guidester.observer],
 ///   builder: (context, child) => GuidesterOverlay(child: child!),
+///   // Only for Navigator.pushNamed apps; Router apps need nothing here.
+///   navigatorObservers: [Guidester.observer],
 /// );
 /// ```
+///
+/// `MaterialApp.router` takes the same `builder`. When [Guidester.isEnabled]
+/// is false (no key was passed) this returns [child] unchanged, so a release
+/// build without the key carries no bubble, no capture and no network call.
 class GuidesterOverlay extends StatefulWidget {
   const GuidesterOverlay({super.key, required this.child, this.client});
 
+  /// Your app: the `child` that `MaterialApp.builder` hands you.
   final Widget child;
 
-  /// Injectable for tests. Defaults to a real [ApiClient].
+  /// Where comments are sent. Null, the default, posts to the endpoint given to
+  /// [Guidester.init]. Tests and the in-browser demo pass their own.
   final ApiClient? client;
 
   @override
