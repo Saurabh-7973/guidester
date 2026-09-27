@@ -1,23 +1,52 @@
 # Quickstart
 
-From nothing to a comment on your dashboard.
+About 15 minutes, once. You need a Flutter app, a free
+[Supabase](https://supabase.com) account, and the
+[Supabase CLI](https://supabase.com/docs/guides/cli).
 
-## 1. Get a key
+## 1. Set up your backend (one command)
 
-Create a project at the Guidester dashboard. Onboarding shows the key on step two, and it
-is also in Settings, where you can rotate or revoke it later.
+Create an empty project at [supabase.com/dashboard](https://supabase.com/dashboard). Note
+its **project ref** (the 20 letters in its URL) and the **database password** you chose.
+Then:
 
-The key is not a secret in the strict sense. It ships inside your test build and anyone
-with the APK can extract it — that is by design, and it is why it only ever grants *write*
-access to one project, and why revoking it is two clicks.
+```bash
+supabase login
+git clone https://github.com/Saurabh-7973/guidester.git
+cd guidester
+./supabase/setup.sh --project-ref <your-project-ref>
+```
 
-## 2. Add the package
+It sets up the database, deploys the function your app sends to, checks it answers, and
+builds your dashboard. It asks for the database password rather than taking it on the
+command line. At the end it prints your **endpoint**:
+
+```
+https://<your-project-ref>.supabase.co/functions/v1/ingest
+```
+
+## 2. Open your dashboard and create a project
+
+```bash
+cd apps/dashboard/build/web && python3 -m http.server 8765
+```
+
+Open <http://localhost:8765>, sign up and confirm your email, then create a project. The
+last onboarding step shows your **key** and endpoint, ready to paste.
+
+> In Supabase, set **Authentication → URL Configuration → Site URL** to wherever you
+> serve the dashboard, so the confirmation email opens it. To share the dashboard with
+> your team, upload `build/web` to any static host.
+
+## 3. Add the package
 
 ```bash
 flutter pub add guidester
 ```
 
-## 3. Three lines
+## 4. Add two things to your app
+
+In `main.dart`:
 
 ```dart
 import 'package:guidester/guidester.dart';
@@ -31,47 +60,68 @@ void main() {
 }
 ```
 
+And on your `MaterialApp` (or `MaterialApp.router`):
+
 ```dart
 MaterialApp(
   builder: (context, child) => GuidesterOverlay(child: child!),
+  // Only if you use named routes with Navigator.pushNamed.
+  // go_router, auto_route and other Router apps need nothing here.
+  navigatorObservers: [Guidester.observer],
   // ...
 )
 ```
 
-`MaterialApp.router` works exactly the same way — `builder` is in both.
+**Both are needed.** `init` alone cannot file a comment: the overlay is what draws the
+bubble and takes the screenshot. If you forget it, the console says so.
 
-**Both changes are required.** `init` on its own configures an SDK that can never file a
-comment, because the overlay is what draws the bubble and captures the screen. If you make
-only the first change, the SDK says so in the console after five seconds.
-
-## 4. Run a test build
+## 5. Run it with your key
 
 ```bash
-flutter run --dart-define=GUIDESTER_KEY=<your key>
+flutter run --dart-define=GUIDESTER_KEY=<your key> \
+            --dart-define=GUIDESTER_ENDPOINT=<your endpoint>
 ```
 
-A blue bubble appears in the corner. Tap it, tap anywhere on the screen, type, send.
+Or keep both in a git-ignored file, `guidester.json`:
 
-## 5. Watch it arrive
-
-The dashboard's onboarding waits for your first launch and moves on by itself when the SDK
-reports in. It reads a ping the overlay sends when it mounts, so "connected" means the
-overlay is really in your tree — not that you pasted a key correctly.
-
-## Optional: Navigator 1.0 named routes
-
-If your app uses `Navigator.pushNamed` rather than a `Router`, add the observer so screen
-names resolve from your route names:
-
-```dart
-MaterialApp(
-  navigatorObservers: [Guidester.observer],
-  builder: (context, child) => GuidesterOverlay(child: child!),
-)
+```json
+{"GUIDESTER_KEY": "<your key>", "GUIDESTER_ENDPOINT": "<your endpoint>"}
 ```
 
-Router-based apps — go_router, auto_route, Beamer — need nothing. See
-[troubleshooting](troubleshooting.md) if screens report `UNKNOWN`.
+```bash
+flutter run --dart-define-from-file=guidester.json
+```
+
+## 6. Check it works
+
+- **The dashboard says so.** Onboarding flips to *Connected — Pixel 7, Android 15* (your
+  device) within seconds of the app starting. That means the overlay is really in your
+  app, not just that the key was pasted.
+- **Send one.** Tap the bubble, tap anywhere, type, send. You see *Comment sent*, and the
+  comment is on your board with its screenshot.
+- **The console tells you the screen name** each time you place a pin:
+  `[guidester] screen: HOME (layer 2)`. If it says `UNKNOWN`, see
+  [troubleshooting](troubleshooting.md#every-comment-says-unknown).
+
+Nothing happening? Every misconfiguration prints one `[guidester]` line in the console
+saying what to fix. The
+[troubleshooting guide](troubleshooting.md)
+covers each one.
+
+## 7. Give it to your testers
+
+```bash
+flutter build apk --dart-define-from-file=guidester.json
+```
+
+Share that APK (or upload it to an internal testing track). Your public release is built
+**without** the defines, so Guidester is switched off in it: no bubble, no capture, no
+network call.
+
+> **Android release builds need the internet permission.** Flutter adds it to debug builds
+> only. If your app makes no other network calls, add
+> `<uses-permission android:name="android.permission.INTERNET"/>` to
+> `android/app/src/main/AndroidManifest.xml`.
 
 ## Optional: name the environment
 

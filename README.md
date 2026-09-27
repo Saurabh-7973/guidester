@@ -1,19 +1,30 @@
 # guidester
 
-Hosted in-app tester feedback for Flutter. Testers tap anywhere on any screen, type, and
-send — comments land on a dashboard with a screenshot, screen name, and full device context.
+In-app tester feedback for Flutter, self-hosted. Testers tap anywhere on any screen, type,
+and send; the comment lands on your dashboard with a screenshot, the screen name, the
+device, the build, and the errors the app threw.
 
-> **Status: Phase 1 of 4.** Only the backend exists. There is no Flutter SDK and no
-> dashboard in this repository yet. Nothing here has been deployed.
+![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](packages/guidester/screenshots/demo.gif)
+
+[![pub package](https://img.shields.io/pub/v/guidester.svg)](https://pub.dev/packages/guidester)
+
+**Get started:** the [Quick start](packages/guidester/README.md#quick-start) takes about 15
+minutes: one command sets up your backend, then two changes to your app.
 
 ## What is in this repository
 
 ```
+packages/guidester/   the Flutter SDK, published on pub.dev as guidester
+apps/dashboard/       the web dashboard your team reads comments on
 supabase/
-├─ migrations/0001_init.sql      schema, RLS policies, private storage bucket
-├─ functions/ingest/index.ts     the only write path — Deno edge function
-└─ tests/                        local verification, no Docker or account needed
+├─ setup.sh           sets up your own backend in one command
+├─ migrations/        schema, row-level security, private screenshot bucket
+├─ functions/ingest/  the only write path: a Deno edge function
+└─ tests/             local verification, no Docker or account needed
 ```
+
+Everything runs on **your** Supabase project. There is no Guidester server, and nothing
+you or your testers send leaves your project.
 
 ## Security model
 
@@ -49,7 +60,7 @@ removing the project-folder scope each fail the specific assertion that should c
 
 ## Deploy
 
-Self-hosted only; there is no hosted service (D77). Create an empty Supabase
+Self-hosted only; there is no hosted service. Create an empty Supabase
 project, run `supabase login`, then:
 
 ```bash
