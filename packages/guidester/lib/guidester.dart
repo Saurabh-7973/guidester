@@ -1,4 +1,4 @@
-/// Hosted in-app tester feedback for Flutter.
+/// In-app tester feedback for Flutter, self-hosted.
 ///
 /// Three lines of integration, no subclassing, no router integration:
 ///

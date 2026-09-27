@@ -9,12 +9,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:guidester/guidester.dart';
+// ignore: implementation_imports
+import 'package:guidester/src/api_client.dart' show ApiClient;
 
 // The whole install, and the same two lines the README and the dashboard's
-// onboarding step show. No endpoint: the hosted one is baked in. No enabled
-// flag: an empty key is the kill switch, so a build with no dart-define ships
-// inert. GUIDESTER_ENDPOINT is read only so this example can be pointed at a
-// self-hosted or local backend.
+// onboarding step show. No enabled flag: an empty key is the kill switch, so a
+// build with no dart-define ships inert. The endpoint is your own deployment
+// of the ingest function; the package ships no default.
 void main() {
   Guidester.init(
     apiKey: const String.fromEnvironment('GUIDESTER_KEY'),
@@ -27,7 +28,20 @@ void main() {
 enum RouterStyle { navigator, goRouter }
 
 class ExampleApp extends StatefulWidget {
-  const ExampleApp({super.key});
+  const ExampleApp({super.key, this.client, this.frameSize, this.title});
+
+  /// The browser tab's title on the web. The inner app sets it, so the demo
+  /// page passes its own.
+  final String? title;
+
+  /// Where comments go. Null is the real network; the in-browser demo
+  /// (`web_demo.dart`) passes one that puts them on its own board instead.
+  final ApiClient? client;
+
+  /// The screen size to report when the app is drawn inside a phone frame on a
+  /// larger page. A nested app otherwise reads the browser window's size, and
+  /// the bubble lands outside the frame.
+  final Size? frameSize;
 
   @override
   State<ExampleApp> createState() => _ExampleAppState();
@@ -40,9 +54,31 @@ class _ExampleAppState extends State<ExampleApp> {
 
   @override
   Widget build(BuildContext context) {
+    Widget overlay(BuildContext context, Widget? child) {
+      final overlay = GuidesterOverlay(client: widget.client, child: child!);
+      final size = widget.frameSize;
+      if (size == null) return overlay;
+      return MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          size: size,
+          padding: const EdgeInsets.only(top: 24),
+          viewPadding: const EdgeInsets.only(top: 24),
+        ),
+        child: overlay,
+      );
+    }
+
     return _style == RouterStyle.navigator
-        ? _NavigatorApp(onSwitch: () => _switchTo(RouterStyle.goRouter))
-        : _GoRouterApp(onSwitch: () => _switchTo(RouterStyle.navigator));
+        ? _NavigatorApp(
+            onSwitch: () => _switchTo(RouterStyle.goRouter),
+            overlay: overlay,
+            title: widget.title,
+          )
+        : _GoRouterApp(
+            onSwitch: () => _switchTo(RouterStyle.navigator),
+            overlay: overlay,
+            title: widget.title,
+          );
   }
 }
 
@@ -51,21 +87,27 @@ class _ExampleAppState extends State<ExampleApp> {
 // ---------------------------------------------------------------------------
 
 class _NavigatorApp extends StatelessWidget {
-  const _NavigatorApp({required this.onSwitch});
+  const _NavigatorApp({
+    required this.onSwitch,
+    required this.overlay,
+    this.title,
+  });
 
   final VoidCallback onSwitch;
+  final TransitionBuilder overlay;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Guidester example (Navigator)',
+      title: title ?? 'Guidester example (Navigator)',
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFF2563EB),
         useMaterial3: true,
       ),
       // The two integration lines. Nothing else in the host changes.
       navigatorObservers: [Guidester.observer],
-      builder: (context, child) => GuidesterOverlay(child: child!),
+      builder: overlay,
       initialRoute: '/home',
       routes: {
         '/home': (_) => _Demo(
@@ -102,9 +144,11 @@ class _NavigatorApp extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _GoRouterApp extends StatelessWidget {
-  _GoRouterApp({required this.onSwitch});
+  _GoRouterApp({required this.onSwitch, required this.overlay, this.title});
 
   final VoidCallback onSwitch;
+  final TransitionBuilder overlay;
+  final String? title;
 
   // Deliberately NOT passing `observers: [Guidester.observer]` here.
   //
@@ -141,13 +185,13 @@ class _GoRouterApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Guidester example (GoRouter)',
+      title: title ?? 'Guidester example (GoRouter)',
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFF2563EB),
         useMaterial3: true,
       ),
       routerConfig: _router,
-      builder: (context, child) => GuidesterOverlay(child: child!),
+      builder: overlay,
     );
   }
 }
