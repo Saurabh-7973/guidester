@@ -7,6 +7,7 @@ import '../config/env.dart';
 import '../data/auth_gateway.dart';
 import '../data/comment_repository.dart';
 import '../data/project_repository.dart';
+import '../data/team_repository.dart';
 import '../routing/location.dart';
 import '../theme/tokens.dart';
 import '../widgets/app_shell.dart';
@@ -36,9 +37,17 @@ class HomeScreen extends StatefulWidget {
     this.location,
     this.onNavigate,
     this.onLogOut,
+    this.team,
+    this.userId,
   });
 
   final CommentRepository repository;
+
+  /// Teams (0013). Null: a solo dashboard, as before teams.
+  final TeamRepository? team;
+
+  /// The signed-in user's id, to tell "you" apart in the team list.
+  final String? userId;
   final ProjectRepository projects;
 
   /// Who is signed in. Read from the Supabase session when omitted, which is
@@ -96,6 +105,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Project>? _projects;
   String? _error;
+
+  /// The signed-in user's role per project, fetched when its board opens.
+  final Map<String, TeamRole?> _roles = {};
+
+  void _fetchRole(String projectId) {
+    final team = widget.team;
+    if (team == null || _roles.containsKey(projectId)) return;
+    _roles[projectId] = null;
+    team.myRole(projectId).then((r) {
+      if (mounted) setState(() => _roles[projectId] = r);
+    }, onError: (_) {});
+  }
+
   bool _loading = true;
 
   @override
@@ -113,6 +135,17 @@ class _HomeScreenState extends State<HomeScreen> {
       _error = null;
     });
     try {
+      // Invites to this user's confirmed email become projects before the
+      // list is read, so a new teammate lands on the shared project. Its own
+      // failure never blocks the list.
+      final team = widget.team;
+      if (first && team != null) {
+        try {
+          await team.acceptInvites();
+        } on Exception {
+          // The next sign-in tries again.
+        }
+      }
       final projects = await widget.projects.list();
       if (!mounted) return;
       setState(() => _projects = projects);
@@ -177,6 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     final loc = _loc;
+    _fetchRole(project.id);
+    final role = _roles[project.id];
     return CommentsScreen(
       // A different project is a different board, not an update to this one.
       key: ValueKey(project.id),
@@ -216,6 +251,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       onBackToProjects: () => _go(const DashboardLocation.projects()),
+      // Unknown role: as before teams; RLS still decides.
+      canDelete: role?.deletes ?? true,
+      readOnly: role == TeamRole.viewer,
       onOpenReport: widget.repository is ReportSource
           ? () => _go(DashboardLocation.status(projectId: project.id))
           : null,
@@ -316,12 +354,20 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           projects: widget.projects,
           projectId: _loc.projectId ?? _first?.id,
+          team: widget.team,
+          myUserId: widget.userId,
+          dashboardUrl: pageUrl(),
+          onLeftProject: () {
+            _go(const DashboardLocation.projects());
+            unawaited(_load());
+          },
         ),
         ShellTab.projects when !_loc.isBoard => _Projects(
           projects: _projects,
           loading: _loading,
           error: _error,
           createdBy: _name,
+          userId: widget.userId,
           onOpen: (p) => _go(DashboardLocation.board(p.id)),
           onRetry: _load,
           onNew: () => _go(const DashboardLocation.newProject()),
@@ -345,9 +391,13 @@ class _Projects extends StatelessWidget {
     required this.onRetry,
     required this.onNew,
     required this.onSettings,
+    this.userId,
   });
 
   final ValueChanged<ProjectSummary> onSettings;
+
+  /// Whose list this is: a project owned by anyone else was shared with them.
+  final String? userId;
 
   final VoidCallback onRetry;
   final VoidCallback onNew;
@@ -393,7 +443,10 @@ class _Projects extends StatelessWidget {
           ProjectSummary(
             id: p.id,
             name: p.name,
-            createdBy: createdBy,
+            createdBy:
+                userId != null && p.ownerId != null && p.ownerId != userId
+                ? 'Shared with you'
+                : createdBy,
             total: p.total,
             unread: p.unread,
           ),

@@ -213,12 +213,15 @@ begin
 
   -- Deletion (0004, G4). The policies matter more than the UI: without them a
   -- data-erasure request cannot be honoured at all.
+  -- By name: 0013 adds an admin's delete beside the owner's.
   select count(*) into n from pg_policies
-    where schemaname = 'public' and tablename = 'comments' and cmd = 'DELETE';
+    where schemaname = 'public' and tablename = 'comments' and cmd = 'DELETE'
+      and policyname = 'owner deletes comments';
   perform assert(n = 1, 'owners can delete comments');
 
   select count(*) into n from pg_policies
-    where schemaname = 'storage' and tablename = 'objects' and cmd = 'DELETE';
+    where schemaname = 'storage' and tablename = 'objects' and cmd = 'DELETE'
+      and policyname = 'owner deletes own screenshots';
   perform assert(n = 1, 'owners can delete their screenshot objects');
 
   -- The delete policies must not have opened anything to anon on the way in.
@@ -453,6 +456,229 @@ begin
     delete from public.project_keys where id = v_key;
     select count(*) into n from public.ingest_hits where key_id = v_key;
     perform assert(n = 0, 'a deleted key takes its counts with it');
+  end;
+
+  -- 0013: teams. A member of A's project sees and triages it; a viewer only
+  -- reads; nobody joins without an invite to their own confirmed email; the
+  -- owner loses nothing; anon still reaches nothing.
+  declare
+    v_a    constant uuid := 'aaaaaaaa-0000-0000-0000-000000000001';
+    v_b    constant uuid := 'bbbbbbbb-0000-0000-0000-000000000002';
+    v_own  constant text := '11111111-1111-1111-1111-111111111111';
+    v_mem  constant text := '33333333-3333-3333-3333-333333333333';
+    v_view constant text := '44444444-4444-4444-4444-444444444444';
+    v_adm  constant text := '55555555-5555-5555-5555-555555555555';
+    v_unc  constant text := '66666666-6666-6666-6666-666666666666';
+    v_str  constant text := '77777777-7777-7777-7777-777777777777';
+    v_cid  uuid;
+    v_spare uuid;
+    v_n    int;
+    v_role text;
+    v_all  int;
+  begin
+    reset role;
+    insert into auth.users (id, email, email_confirmed_at) values
+      (v_mem::uuid,  'member@test',   now()),
+      (v_view::uuid, 'viewer@test',   now()),
+      (v_adm::uuid,  'admin@test',    now()),
+      (v_unc::uuid,  'unconfirmed@test', null),
+      (v_str::uuid,  'stranger@test', now());
+    select id into v_cid from public.comments where project_id = v_a limit 1;
+    insert into public.comments (project_id, body, screen_name)
+      values (v_a, 'spare comment on A', 'HOME') returning id into v_spare;
+    select count(*) into v_all from public.comments where project_id = v_a;
+
+    -- Before any invite, a signed-in stranger to the project sees none of it.
+    perform as_user(v_mem);
+    select count(*) into n from public.comments where project_id = v_a;
+    perform assert(n = 0, 'team: no invite, no comments');
+    select public.accept_project_invites() into v_n;
+    perform assert(v_n = 0, 'team: accepting with no invite joins nothing');
+
+    -- Nobody adds themselves.
+    begin
+      insert into public.project_members (project_id, user_id, role)
+        values (v_a, v_mem::uuid, 'admin');
+      perform assert(false, 'team: self-insert into members must be denied');
+    exception when insufficient_privilege or check_violation then
+      perform assert(true, 'team: a user cannot add themselves to a project');
+    end;
+    begin
+      insert into public.project_invites (project_id, email, role)
+        values (v_a, 'member@test', 'admin');
+      perform assert(false, 'team: self-invite must be denied');
+    exception when insufficient_privilege or check_violation then
+      perform assert(true, 'team: a non-member cannot invite');
+    end;
+
+    -- The owner invites.
+    perform as_user(v_own);
+    insert into public.project_invites (project_id, email, role, team) values
+      (v_a, 'member@test', 'member', 'qa'),
+      (v_a, 'viewer@test', 'viewer', 'lead'),
+      (v_a, 'admin@test', 'admin', 'developer'),
+      (v_a, 'unconfirmed@test', 'member', null),
+      (v_a, 'owner-a@test', 'viewer', null);
+    begin
+      insert into public.project_invites (project_id, email, role)
+        values (v_a, 'x@test', 'owner');
+      perform assert(false, 'team: owner role must be rejected');
+    exception when check_violation then
+      perform assert(true, 'team: nobody can be invited as owner');
+    end;
+
+    -- Owner B cannot see or add invites on A.
+    perform as_user('22222222-2222-2222-2222-222222222222');
+    select count(*) into n from public.project_invites;
+    perform assert(n = 0, 'team: another owner sees no invites on A');
+    begin
+      insert into public.project_invites (project_id, email, role)
+        values (v_a, 'stranger@test', 'admin');
+      perform assert(false, 'team: owner B inviting onto A must be denied');
+    exception when insufficient_privilege or check_violation then
+      perform assert(true, 'team: owner B cannot invite onto A');
+    end;
+
+    -- An unconfirmed address joins nothing.
+    perform as_user(v_unc);
+    select public.accept_project_invites() into v_n;
+    perform assert(v_n = 0, 'team: an unconfirmed email joins nothing');
+    select count(*) into n from public.comments;
+    perform assert(n = 0, 'team: and sees nothing');
+
+    -- The owner's own invite is a no-op.
+    perform as_user(v_own);
+    select public.accept_project_invites() into v_n;
+    perform assert(v_n = 0, 'team: the owner does not join their own project');
+
+    -- The member accepts and triages.
+    perform as_user(v_mem);
+    select public.accept_project_invites() into v_n;
+    perform assert(v_n = 1, 'team: member joins by their confirmed email');
+    select public.project_role(v_a) into v_role;
+    perform assert(v_role = 'member', 'team: project_role says member');
+    select count(*) into n from public.projects;
+    perform assert(n = 1, 'team: member sees A and only A');
+    select count(*) into n from public.comments where project_id = v_b;
+    perform assert(n = 0, 'team: member sees nothing of B');
+    select count(*) into n from storage.objects;
+    perform assert(n = 1, 'team: member reads A''s screenshots, not B''s');
+    update public.comments set dev_verdict = 'in_progress' where id = v_cid;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 1, 'team: member moves a verdict');
+    insert into public.comment_events (comment_id, kind, body)
+      values (v_cid, 'commented', 'member note');
+    perform assert(true, 'team: member adds a note');
+    delete from public.comments where id = v_spare;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 0, 'team: member cannot delete a comment');
+    select count(*) into n from public.project_invites;
+    perform assert(n = 0, 'team: member cannot see invites');
+    select count(*) into n from public.project_members where project_id = v_a;
+    perform assert(n = 1, 'team: member sees the team');
+    update public.project_members set role = 'admin'
+      where project_id = v_a and user_id = v_mem::uuid;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 0, 'team: member cannot promote themselves');
+    begin
+      insert into public.project_keys (project_id, label) values (v_a, 'mine');
+      perform assert(false, 'team: member making a key must be denied');
+    exception when insufficient_privilege or check_violation then
+      perform assert(true, 'team: member cannot make keys');
+    end;
+    select count(*) into n from public.project_keys where project_id = v_a;
+    perform assert(n >= 1, 'team: member sees the key for the install snippet');
+    delete from public.projects where id = v_a;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 0, 'team: member cannot delete the project');
+
+    -- The viewer reads, and only reads.
+    perform as_user(v_view);
+    perform public.accept_project_invites();
+    select count(*) into n from public.comments where project_id = v_a;
+    perform assert(n = v_all, 'team: viewer reads every comment on A');
+    update public.comments set dev_verdict = 'fixed' where id = v_cid;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 0, 'team: viewer cannot move a verdict');
+    begin
+      insert into public.comment_events (comment_id, kind, body)
+        values (v_cid, 'commented', 'viewer note');
+      perform assert(false, 'team: viewer note must be denied');
+    exception when insufficient_privilege or check_violation then
+      perform assert(true, 'team: viewer cannot add notes');
+    end;
+    select count(*) into n from public.project_keys where project_id = v_a;
+    perform assert(n = 0, 'team: viewer does not see keys');
+    reset role;
+    select count(*) into n from public.projects p
+      join public.project_keys k on k.key = p.api_key
+      where p.id = v_a;
+    perform assert(n = 0, 'team: the projects row a viewer reads holds no live key');
+    perform as_user(v_view);
+
+    -- A revoked invite is dead.
+    perform as_user(v_own);
+    update public.project_invites set revoked_at = now()
+      where email = 'admin@test';
+    perform as_user(v_adm);
+    select public.accept_project_invites() into v_n;
+    perform assert(v_n = 0, 'team: a revoked invite joins nothing');
+    perform as_user(v_own);
+    insert into public.project_invites (project_id, email, role, team)
+      values (v_a, 'admin@test', 'admin', 'developer');
+
+    -- The admin deletes, invites and removes.
+    perform as_user(v_adm);
+    select public.accept_project_invites() into v_n;
+    perform assert(v_n = 1, 'team: a fresh invite after a revoked one works');
+    delete from public.comments where id = v_spare;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 1, 'team: admin deletes a comment');
+    insert into public.project_invites (project_id, email, role)
+      values (v_a, 'stranger@test', 'viewer');
+    perform assert(true, 'team: admin invites');
+    delete from public.project_members
+      where project_id = v_a and user_id = v_view::uuid;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 1, 'team: admin removes a member');
+    delete from public.projects where id = v_a;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 0, 'team: admin cannot delete the project');
+
+    perform as_user(v_view);
+    select count(*) into n from public.comments where project_id = v_a;
+    perform assert(n = 0, 'team: a removed member sees nothing');
+
+    -- Anyone leaves.
+    perform as_user(v_mem);
+    delete from public.project_members
+      where project_id = v_a and user_id = v_mem::uuid;
+    get diagnostics v_n = row_count;
+    perform assert(v_n = 1, 'team: a member leaves');
+    select count(*) into n from public.comments where project_id = v_a;
+    perform assert(n = 0, 'team: and sees nothing after');
+
+    -- The owner kept everything.
+    perform as_user(v_own);
+    select count(*) into n from public.comments where project_id = v_a;
+    perform assert(n = v_all - 1, 'team: owner still reads A (less the deleted one)');
+    select public.project_role(v_a) into v_role;
+    perform assert(v_role = 'owner', 'team: project_role says owner');
+
+    -- anon, still nothing.
+    reset role;
+    set local role anon;
+    select count(*) into n from public.project_members;
+    perform assert(n = 0, 'team: anon reads no members');
+    select count(*) into n from public.project_invites;
+    perform assert(n = 0, 'team: anon reads no invites');
+    begin
+      perform public.accept_project_invites();
+      perform assert(false, 'team: anon must not call accept');
+    exception when insufficient_privilege then
+      perform assert(true, 'team: anon cannot call accept_project_invites');
+    end;
+    reset role;
   end;
 
   -- 0010: an owner deletes their own project, and its comments go with it;

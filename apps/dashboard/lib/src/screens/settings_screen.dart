@@ -7,8 +7,10 @@ import '../data/auth_gateway.dart';
 
 import '../data/comment_repository.dart' show RepositoryException;
 import '../data/project_repository.dart';
+import '../data/team_repository.dart';
 import '../theme/tokens.dart';
 import '../widgets/controls.dart';
+import '../widgets/team_panel.dart';
 import 'onboarding_screen.dart' show CodeBlock, installSnippet;
 
 /// Spec §7. Two columns at x=409 and x=773, each 250 wide.
@@ -33,6 +35,10 @@ class SettingsScreen extends StatefulWidget {
     this.apiKeyLastUsed,
     this.onRotate,
     this.onRevoke,
+    this.team,
+    this.myUserId,
+    this.dashboardUrl = '',
+    this.onLeftProject,
   });
 
   final String email;
@@ -65,6 +71,17 @@ class SettingsScreen extends StatefulWidget {
   final VoidCallback? onRotate;
   final VoidCallback? onRevoke;
 
+  /// The project's team. Null leaves the Team section out, and with it the
+  /// role checks: a solo owner sees Settings as before.
+  final TeamRepository? team;
+  final String? myUserId;
+
+  /// Where an invitee signs up.
+  final String dashboardUrl;
+
+  /// After leaving someone else's project.
+  final VoidCallback? onLeftProject;
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -77,10 +94,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _busy = false;
   String? _error;
 
+  /// The signed-in user's role here. Null until known, or with no team repo:
+  /// then everything shows, as it did before teams, and RLS still decides.
+  TeamRole? _role;
+
+  bool get _managesKeys => _role == null || _role!.managesTeam;
+
   @override
   void initState() {
     super.initState();
     unawaited(_load());
+    unawaited(_loadRole());
+  }
+
+  Future<void> _loadRole() async {
+    final team = widget.team;
+    final id = widget.projectId;
+    if (team == null || id == null) return;
+    try {
+      final role = await team.myRole(id);
+      if (mounted) setState(() => _role = role);
+    } on RepositoryException {
+      // Unknown role: show what the owner would see; RLS still decides.
+    }
   }
 
   /// §5.6 row 8: the install, again, for when onboarding was skipped or the
@@ -108,6 +144,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final name = widget.projectName;
     if (repo == null || id == null || name == null) return const [];
     if (widget.onProjectDeleted == null) return const [];
+    // Only the owner can delete a project (0010); an admin cannot.
+    if (_role != null && _role != TeamRole.owner) return const [];
     return [
       const SizedBox(height: 40),
       Text('Delete project', style: T.ui.copyWith(color: T.text2)),
@@ -280,30 +318,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
       created: _created,
       lastUsed: _lastUsed,
       revoked: _key?.isRevoked ?? false,
+      canManage: _managesKeys,
       error: _error,
       busy: _busy,
-      onRotate: widget.projects != null ? _rotate : widget.onRotate,
-      onRevoke: widget.projects != null ? _revoke : widget.onRevoke,
+      onRotate: !_managesKeys
+          ? null
+          : (widget.projects != null ? _rotate : widget.onRotate),
+      onRevoke: !_managesKeys
+          ? null
+          : (widget.projects != null ? _revoke : widget.onRevoke),
     );
+    final team = widget.team;
+    final id = widget.projectId;
+    final teamPanel = team == null || id == null
+        ? null
+        : TeamPanel(
+            repository: team,
+            projectId: id,
+            myUserId: widget.myUserId,
+            myEmail: widget.email,
+            dashboardUrl: widget.dashboardUrl,
+            onLeft: widget.onLeftProject,
+          );
     // Two columns where they fit, as in the frame; stacked on a phone.
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= _columnWidth * 2 + _columnGap) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 58),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(width: _columnWidth, child: account),
-                const SizedBox(width: _columnGap),
-                SizedBox(
-                  width: _columnWidth,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [keys, ..._install(), ..._danger()],
-                  ),
+          final row = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: _columnWidth, child: account),
+              const SizedBox(width: _columnGap),
+              SizedBox(
+                width: _columnWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [keys, ..._install(), ..._danger()],
                 ),
-              ],
+              ),
+            ],
+          );
+          if (teamPanel == null) {
+            return Padding(padding: const EdgeInsets.only(top: 58), child: row);
+          }
+          return SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 58, bottom: 80),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [row, const SizedBox(height: 48), teamPanel],
             ),
           );
         }
@@ -317,6 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               keys,
               ..._install(),
               ..._danger(),
+              if (teamPanel != null) ...[const SizedBox(height: 40), teamPanel],
             ],
           ),
         );
@@ -448,6 +511,7 @@ class _ApiKey extends StatelessWidget {
     required this.lastUsed,
     required this.onRotate,
     required this.onRevoke,
+    this.canManage = true,
     this.revoked = false,
     this.busy = false,
     this.error,
@@ -461,6 +525,9 @@ class _ApiKey extends StatelessWidget {
   final String? error;
   final VoidCallback? onRotate;
   final VoidCallback? onRevoke;
+
+  /// False for a member: the key shows, the buttons do not.
+  final bool canManage;
 
   @override
   Widget build(BuildContext context) {
@@ -495,16 +562,22 @@ class _ApiKey extends StatelessWidget {
           const _MetaLine(label: 'Last used', value: 'never'),
         if (revoked) const _MetaLine(label: 'Status', value: 'revoked'),
         const SizedBox(height: 18),
-        Row(
-          children: [
-            GButton(label: 'Rotate', busy: busy, onPressed: onRotate),
-            const SizedBox(width: 12),
-            GButtonOutlined(
-              label: 'Revoke',
-              onPressed: revoked ? null : onRevoke,
-            ),
-          ],
-        ),
+        if (canManage)
+          Row(
+            children: [
+              GButton(label: 'Rotate', busy: busy, onPressed: onRotate),
+              const SizedBox(width: 12),
+              GButtonOutlined(
+                label: 'Revoke',
+                onPressed: revoked ? null : onRevoke,
+              ),
+            ],
+          )
+        else
+          Text(
+            'The owner or an admin rotates and revokes keys.',
+            style: T.supporting.copyWith(color: T.text3),
+          ),
         if (error != null) ...[
           const SizedBox(height: 12),
           Text(error!, style: T.supporting.copyWith(color: T.red)),

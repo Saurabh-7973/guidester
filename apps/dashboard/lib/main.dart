@@ -9,6 +9,7 @@ import 'src/data/auth_gateway.dart';
 import 'src/data/comment_repository.dart';
 import 'src/data/project_repository.dart';
 import 'src/data/session_state.dart';
+import 'src/data/team_repository.dart';
 import 'src/routing/location.dart';
 import 'src/routing/router.dart';
 import 'src/screens/home_screen.dart';
@@ -56,6 +57,7 @@ class _DashboardAppState extends State<DashboardApp> {
       .listen((s) => _auth.onEvent(s.event, s.session?.user.email));
   late final _comments = SupabaseCommentRepository(_client);
   late final _projects = SupabaseProjectRepository(_client);
+  late final _team = SupabaseTeamRepository(_client);
 
   // The reset link comes back to wherever this dashboard is served, minus
   // any route: the router puts the user on the reset screen itself.
@@ -83,6 +85,8 @@ class _DashboardAppState extends State<DashboardApp> {
       displayName: _client.auth.currentUser?.userMetadata?['name'] as String?,
       repository: _comments,
       projects: _projects,
+      team: _team,
+      userId: _client.auth.currentUser?.id,
       location: location,
       onNavigate: navigate,
       onLogOut: _logOut,

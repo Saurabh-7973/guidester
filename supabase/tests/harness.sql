@@ -9,7 +9,9 @@ end $$;
 create schema auth;
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
-  email text unique
+  email text unique,
+  -- Null until the address is confirmed, as in Supabase. 0013 reads it.
+  email_confirmed_at timestamptz
 );
 -- Supabase reads the JWT claim; tests set it via a GUC.
 create function auth.uid() returns uuid language sql stable as $$
