@@ -207,9 +207,9 @@ Color _readinessColor(Readiness r) => switch (r) {
 
 Color _stageColor(Stage s) => switch (s) {
   Stage.blocked => T.red,
-  Stage.stillBroken => const Color(0xFFFB923C),
+  Stage.stillBroken => T.amber,
   Stage.fresh => T.text2,
-  Stage.inProgress => T.amber,
+  Stage.inProgress => T.teal,
   Stage.awaitingVerification => T.accentText,
   Stage.verified => T.green,
   Stage.deferred => T.text3,
