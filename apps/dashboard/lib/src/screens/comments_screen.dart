@@ -1150,10 +1150,14 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The label alone: with the chip's own text merged in, a screen reader
+    // said every filter twice ("All All", 27 Sep audit).
     return Semantics(
       button: true,
       selected: isSelected,
       label: label,
+      onTap: onTap,
+      excludeSemantics: true,
       child: Material(
         color: isSelected
             ? AppTheme.accent.withValues(alpha: 0.18)

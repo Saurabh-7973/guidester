@@ -45,12 +45,12 @@ class ContextPanel extends StatelessWidget {
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         initiallyExpanded: true,
         children: [
-          for (final e in promoted.entries) _Row(label: e.key, value: e.value),
+          for (final e in promoted.entries) _Row(name: e.key, value: e.value),
           if (promoted.isNotEmpty && columns.isNotEmpty)
             const Divider(height: 16),
-          for (final e in columns.entries) _Row(label: e.key, value: e.value),
+          for (final e in columns.entries) _Row(name: e.key, value: e.value),
           if (extra.isNotEmpty) const Divider(height: 16),
-          for (final e in extra.entries) _Row(label: e.key, value: e.value),
+          for (final e in extra.entries) _Row(name: e.key, value: e.value),
         ],
       ),
     );
@@ -58,18 +58,70 @@ class ContextPanel extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value});
+  const _Row({required this.name, required this.value});
 
-  final String label;
+  /// The key as the SDK sent it.
+  final String name;
   final Object? value;
 
-  String get _rendered => switch (value) {
-    null => '—',
-    final List<dynamic> l => l.isEmpty ? '—' : l.join(' → '),
-    final double d => d.toStringAsFixed(2),
-    final Map<dynamic, dynamic> m => m.toString(),
-    final Object o => o.toString(),
+  /// Words for the keys the SDK sends today. Anything else is spaced out, so
+  /// a key added later still shows (27 Sep audit: "text_scale_factor 2.00").
+  static const Map<String, String> _labels = {
+    'text_scale_factor': 'Text size',
+    'platform_brightness': 'Theme',
+    'is_physical_device': 'Physical device',
+    'screen_resolver': 'Screen named by',
+    'route_stack': 'Route stack',
+    'device_model': 'Device',
+    'os_version': 'OS',
+    'app_version': 'App version',
+    'build_number': 'Build',
+    'package_name': 'Package',
+    'sdk_version': 'Guidester SDK',
+    'tester_name': 'Tester',
+    'tester_id': 'Tester id',
+    'device_pixel_ratio': 'Pixel ratio',
+    'screen_w': 'Screen width',
+    'screen_h': 'Screen height',
+    'queued_at': 'Queued offline at',
   };
+
+  /// Scales read as multipliers.
+  static const Set<String> _times = {'text_scale_factor', 'device_pixel_ratio'};
+
+  String get _label {
+    final known = _labels[name];
+    if (known != null) return known;
+    final spaced = name.replaceAll('_', ' ').trim();
+    return spaced.isEmpty
+        ? name
+        : spaced[0].toUpperCase() + spaced.substring(1);
+  }
+
+  /// 2.0 is "2", 2.625 is "2.63": no padding zeros.
+  static String _number(num n) {
+    if (n == n.roundToDouble()) return n.round().toString();
+    return n
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
+
+  String get _rendered {
+    final v = value;
+    if (name == 'is_physical_device' && v is bool) {
+      return v ? 'yes' : 'no (emulator or simulator)';
+    }
+    if (v is num && _times.contains(name)) return '${_number(v)}×';
+    return switch (v) {
+      null => '—',
+      final List<dynamic> l => l.isEmpty ? '—' : l.join(' → '),
+      final num n => _number(n),
+      final bool b => b ? 'yes' : 'no',
+      final Map<dynamic, dynamic> m => m.toString(),
+      final Object o => o.toString(),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +133,7 @@ class _Row extends StatelessWidget {
           SizedBox(
             width: 150,
             child: Text(
-              label,
+              _label,
               style: const TextStyle(
                 fontSize: 12,
                 color: AppTheme.muted,

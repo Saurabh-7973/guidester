@@ -65,6 +65,9 @@ void main() {
       expect(BlockedOn.fromWire(null), isNull);
       expect(BlockedOn.label('third-party'), 'Third party');
       expect(BlockedOn.label('master_data'), 'Master data');
+      // 27 Sep audit: the QA chip read "Qa".
+      expect(BlockedOn.label('qa'), 'QA');
+      expect(BlockedOn.label('ui_ux'), 'UI UX');
     });
 
     test('the defaults are general, not domain-specific', () {
