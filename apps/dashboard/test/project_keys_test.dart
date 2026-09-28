@@ -4,6 +4,7 @@ import 'package:dashboard/src/data/team_repository.dart';
 import 'package:dashboard/src/screens/home_screen.dart';
 import 'package:dashboard/src/screens/settings_screen.dart';
 import 'package:dashboard/src/theme/app_theme.dart';
+import 'package:dashboard/src/widgets/app_shell.dart';
 import 'package:dashboard/src/widgets/controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -256,6 +257,70 @@ void main() {
       expect(find.text('Snapdrop'), findsOneWidget);
       expect(find.textContaining('32'), findsOneWidget);
     });
+  });
+
+  testWidgets('a project that arrives after Settings opened still shows its '
+      'key', (tester) async {
+    // Found 28 Sep: reloading /settings mounts Settings before the project
+    // list has loaded, so it has no project yet, and it read the key only
+    // once, on mount. It said "No key yet" for a project with a live key.
+    tester.view.physicalSize = const Size(1440, 752);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final repo = _FakeProjects();
+    Widget at(String? id) => MaterialApp(
+      theme: AppTheme.dark,
+      home: Scaffold(
+        body: SettingsScreen(
+          email: 'dev@example.com',
+          projects: repo,
+          projectId: id,
+        ),
+      ),
+    );
+    await tester.pumpWidget(at(null));
+    await tester.pumpAndSettle();
+    expect(find.text('No key yet'), findsOneWidget);
+
+    await tester.pumpWidget(at('p1'));
+    await tester.pumpAndSettle();
+    expect(find.text('No key yet'), findsNothing);
+    expect(find.textContaining('gd_live_'), findsWidgets);
+  });
+
+  testWidgets('with a team, Settings scrolls to the invite form in the shell', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1512, 794);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: AppShell(
+          tab: ShellTab.settings,
+          onTabSelected: (_) {},
+          userName: 'dev',
+          onLogOut: () {},
+          child: SettingsScreen(
+            email: 'dev@example.com',
+            projects: _FakeProjects(),
+            projectId: 'p1',
+            projectName: 'Snapdrop',
+            onProjectDeleted: () {},
+            team: FakeTeam(),
+            myUserId: 'me',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Invite someone'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Invite someone').hitTestable(), findsOneWidget);
   });
 
   group('by role', () {
