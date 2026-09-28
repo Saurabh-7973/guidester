@@ -108,6 +108,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     unawaited(_loadRole());
   }
 
+  /// Reloading /settings mounts this before the project list has loaded, so
+  /// the project can arrive later. Read its key and role when it does
+  /// (found 28 Sep: "No key yet" beside a live key).
+  @override
+  void didUpdateWidget(SettingsScreen old) {
+    super.didUpdateWidget(old);
+    if (old.projectId != widget.projectId) {
+      setState(() {
+        _key = null;
+        _role = null;
+        _error = null;
+      });
+      unawaited(_load());
+      unawaited(_loadRole());
+    }
+  }
+
   Future<void> _loadRole() async {
     final team = widget.team;
     final id = widget.projectId;

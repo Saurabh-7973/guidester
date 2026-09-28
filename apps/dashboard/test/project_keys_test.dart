@@ -258,6 +258,35 @@ void main() {
     });
   });
 
+  testWidgets('a project that arrives after Settings opened still shows its '
+      'key', (tester) async {
+    // Found 28 Sep: reloading /settings mounts Settings before the project
+    // list has loaded, so it has no project yet, and it read the key only
+    // once, on mount. It said "No key yet" for a project with a live key.
+    tester.view.physicalSize = const Size(1440, 752);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final repo = _FakeProjects();
+    Widget at(String? id) => MaterialApp(
+      theme: AppTheme.dark,
+      home: Scaffold(
+        body: SettingsScreen(
+          email: 'dev@example.com',
+          projects: repo,
+          projectId: id,
+        ),
+      ),
+    );
+    await tester.pumpWidget(at(null));
+    await tester.pumpAndSettle();
+    expect(find.text('No key yet'), findsOneWidget);
+
+    await tester.pumpWidget(at('p1'));
+    await tester.pumpAndSettle();
+    expect(find.text('No key yet'), findsNothing);
+    expect(find.textContaining('gd_live_'), findsWidgets);
+  });
+
   group('by role', () {
     testWidgets('a member sees the key but cannot rotate, revoke or delete', (
       tester,
