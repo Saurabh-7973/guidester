@@ -3,6 +3,7 @@ import 'package:dashboard/src/data/project_repository.dart';
 import 'package:dashboard/src/data/team_repository.dart';
 import 'package:dashboard/src/screens/home_screen.dart';
 import 'package:dashboard/src/screens/settings_screen.dart';
+import 'package:dashboard/src/widgets/app_shell.dart';
 import 'package:dashboard/src/theme/app_theme.dart';
 import 'package:dashboard/src/widgets/controls.dart';
 import 'package:flutter/material.dart';
@@ -285,6 +286,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No key yet'), findsNothing);
     expect(find.textContaining('gd_live_'), findsWidgets);
+  });
+
+  testWidgets('with a team, Settings scrolls to the invite form in the shell', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1512, 794);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: AppShell(
+          tab: ShellTab.settings,
+          onTabSelected: (_) {},
+          userName: 'dev',
+          onLogOut: () {},
+          child: SettingsScreen(
+            email: 'dev@example.com',
+            projects: _FakeProjects(),
+            projectId: 'p1',
+            projectName: 'Snapdrop',
+            onProjectDeleted: () {},
+            team: FakeTeam(),
+            myUserId: 'me',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Invite someone'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Invite someone').hitTestable(), findsOneWidget);
   });
 
   group('by role', () {
