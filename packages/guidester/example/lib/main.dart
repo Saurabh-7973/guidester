@@ -252,6 +252,35 @@ class _Demo extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          // Redaction, live. Pin a comment on this screen: the card number
+          // arrives as a solid block, in the thumbnail and on the board.
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saved card',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  GuidesterRedact(
+                    child: Text(
+                      '4242 4242 4242 4242',
+                      style: TextStyle(fontFamily: 'monospace', fontSize: 16),
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Wrapped in GuidesterRedact: never in a screenshot.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           if (!Guidester.isEnabled)
             const Card(
               color: Color(0xFFFFF7ED),

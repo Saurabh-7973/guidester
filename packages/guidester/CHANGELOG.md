@@ -1,3 +1,25 @@
+## 0.6.0
+
+- **Hide sensitive fields from screenshots.** Wrap a card number, a balance or another
+  user's name in `GuidesterRedact` and it arrives as a solid block. Opaque, not blurred —
+  a blur can be reversed. The block is painted before the screenshot is encoded, so the
+  hidden pixels are never in the image the tester sees, the one queued offline, or the one
+  uploaded.
+- **It fails closed.** If a wrapped area cannot be located when the screenshot is taken,
+  the comment is still sent, without the picture. It never falls back to the unredacted
+  one. The tester sees "Screenshot not attached. Your comment will still be sent." — and
+  nothing about what was hidden.
+- **Evidence on the dashboard.** A screenshot with hidden areas says how many were
+  covered; a withheld one says why (not laid out, detached, outside the app, timed out),
+  so a misplaced `GuidesterRedact` is easy to find. It rides in the comment's context, so
+  no backend change or redeploy is needed.
+- **Every tester sees what will be sent.** The composer now shows a thumbnail of the
+  screenshot; tap it to see it full screen. Before, only testers who opened *Mark up
+  screenshot* ever saw the image.
+- A wrapped area that is half scrolled off screen has its visible half covered; one that
+  is off screen or not drawn is simply not in the picture.
+- The example app and the browser demo wrap a saved card number, so you can watch it work.
+
 ## 0.5.8
 
 - The package now has a homepage, https://saurabhupadhyay.in/guidester, and a verified

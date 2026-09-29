@@ -388,4 +388,60 @@ void _blankRegionTests() {
       expect(c.blankRegions, isEmpty);
     });
   });
+
+  // SDK 0.6.0: what GuidesterRedact did, carried in the comment's context.
+  group('redaction', () {
+    Comment withRedaction(Object? redaction) => Comment(
+      id: '1',
+      body: 'b',
+      screenName: 'S',
+      status: CommentStatus.open,
+      createdAt: DateTime.now(),
+      context: {'redaction': redaction},
+    );
+
+    test('a count is evidence it ran', () {
+      final r = withRedaction({'regions': 3}).redaction!;
+      expect(r.withheld, isFalse);
+      expect(r.label, '3 regions redacted');
+      expect(
+        withRedaction({'regions': 1}).redaction!.label,
+        '1 region redacted',
+      );
+    });
+
+    test('a withheld screenshot says why, in words', () {
+      final r = withRedaction({'failure': 'outside_boundary'}).redaction!;
+      expect(r.withheld, isTrue);
+      expect(r.label, startsWith('Screenshot withheld: '));
+      expect(r.label, contains('outside the part of the app'));
+    });
+
+    test('an older SDK, or nothing wrapped, shows nothing', () {
+      expect(withRedaction(null).redaction, isNull);
+      expect(
+        Comment(
+          id: '1',
+          body: 'b',
+          screenName: 'S',
+          status: CommentStatus.open,
+          createdAt: DateTime.now(),
+        ).redaction,
+        isNull,
+      );
+    });
+
+    test('a malformed value makes no claim', () {
+      expect(withRedaction('nonsense').redaction, isNull);
+      expect(withRedaction({'regions': -1}).redaction, isNull);
+      expect(withRedaction({'regions': '3'}).redaction, isNull);
+      expect(withRedaction(<String, dynamic>{}).redaction, isNull);
+    });
+
+    test('an unknown failure name still reads as a withheld screenshot', () {
+      final r = withRedaction({'failure': 'something_new'}).redaction!;
+      expect(r.withheld, isTrue);
+      expect(r.label, contains('something_new'));
+    });
+  });
 }

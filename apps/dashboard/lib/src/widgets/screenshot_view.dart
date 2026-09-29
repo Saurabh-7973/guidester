@@ -29,8 +29,16 @@ class ScreenshotView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final redaction = comment.redaction;
     if (comment.screenshotPath == null) {
-      return const _Placeholder(message: 'No screenshot with this comment');
+      // A withheld screenshot says why: that is how a misplaced
+      // GuidesterRedact gets found, since the tester is told only that none
+      // was attached.
+      return _Placeholder(
+        message: redaction != null && redaction.withheld
+            ? redaction.label
+            : 'No screenshot with this comment',
+      );
     }
     if (expired) {
       return const _Placeholder(
@@ -70,6 +78,13 @@ class ScreenshotView extends StatelessWidget {
               // capture time; this is the same fact on the developer's side.
               for (final region in comment.blankRegions)
                 Positioned.fill(child: _BlankOverlay(region: region)),
+              // Evidence redaction ran, next to the picture it ran on.
+              if (redaction != null && !redaction.withheld)
+                Positioned(
+                  left: 8,
+                  top: 8,
+                  child: _RedactionChip(label: redaction.label),
+                ),
               if (comment.hasPin)
                 Positioned.fill(
                   child: Align(
@@ -109,6 +124,36 @@ class _PinDot extends StatelessWidget {
               blurRadius: 10,
               spreadRadius: 3,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RedactionChip extends StatelessWidget {
+  const _RedactionChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: label,
+      child: Container(
+        key: const ValueKey('redaction-chip'),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xE6131313),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.visibility_off_outlined, size: 12, color: T.text2),
+            const SizedBox(width: 4),
+            Text(label, style: T.supporting.copyWith(color: T.text2)),
           ],
         ),
       ),

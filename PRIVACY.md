@@ -145,9 +145,10 @@ nothing left pointing at it.
 personal data, which makes you a data fiduciary on a live listing and forces a
 Data-safety change there.
 
-Production support is a real v1 goal and it needs `GuidesterMask` first — a
-widget that redacts its subtree before capture. The hard part of masking is
-occlusion, not blur; the incumbent's #380 author hit exactly that and said so.
+`GuidesterRedact` (0.6.0) redacts a subtree before capture: an opaque fill
+painted onto the frame before it is encoded, never a blur, and failing closed —
+if a wrapped area cannot be located, no screenshot is sent. It covers only what
+the developer wraps, so production support still needs more than this widget.
 
 ---
 

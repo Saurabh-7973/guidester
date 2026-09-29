@@ -112,6 +112,10 @@ class Comment {
     ];
   }
 
+  /// What `GuidesterRedact` did to the screenshot, from SDK 0.6.0. Null when
+  /// nothing on the screen was wrapped, or the SDK is older.
+  Redaction? get redaction => Redaction.fromJson(context['redaction']);
+
   factory Comment.fromRow(Map<String, dynamic> row) {
     return Comment(
       id: row['id']?.toString() ?? '',

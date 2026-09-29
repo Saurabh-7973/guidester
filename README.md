@@ -153,7 +153,7 @@ Expected: `{"ok":true}`. A wrong key returns 401; a missing `body` returns 400.
   swallows is not one of them, and neither is one thrown in a zone the SDK
   never sees.
 - **Test builds only.** Screenshots from production capture other people's personal data.
-  Production support needs a redaction widget that does not exist yet.
+  `GuidesterRedact` (0.6.0) covers the fields you wrap, but only those.
 
 ## Licence
 
