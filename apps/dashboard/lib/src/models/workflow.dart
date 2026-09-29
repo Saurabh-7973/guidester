@@ -248,3 +248,51 @@ class BlankRegion {
     _ => 0,
   };
 }
+
+/// What `GuidesterRedact` did to a screenshot. Sent by SDK 0.6.0+ in the
+/// comment's context: `{"regions": 3}`, or `{"failure": "not_laid_out"}` when
+/// the screenshot was withheld.
+class Redaction {
+  const Redaction._({this.regions, this.failure});
+
+  /// Areas painted over. Null when the screenshot was withheld.
+  final int? regions;
+
+  /// The SDK's wire name for why the screenshot was withheld.
+  final String? failure;
+
+  bool get withheld => failure != null;
+
+  /// Null for anything that is not one of the two shapes the SDK sends, so a
+  /// malformed context never shows a claim nobody made.
+  static Redaction? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final failure = raw['failure'];
+    if (failure is String && failure.isNotEmpty) {
+      return Redaction._(failure: failure.length > 64 ? 'unknown' : failure);
+    }
+    final regions = raw['regions'];
+    if (regions is int && regions >= 0) return Redaction._(regions: regions);
+    return null;
+  }
+
+  /// The line shown next to the screenshot.
+  String get label {
+    if (failure != null) return 'Screenshot withheld: $reason';
+    final n = regions!;
+    return n == 1 ? '1 region redacted' : '$n regions redacted';
+  }
+
+  /// Why, in words a developer fixing their `GuidesterRedact` can act on.
+  String get reason => switch (failure) {
+    'not_laid_out' => 'a redacted area was not laid out yet',
+    'detached' => 'a redacted area was no longer on screen',
+    'outside_boundary' =>
+      'a redacted area is outside the part of the app Guidester captures',
+    'not_a_box' => 'a redacted area is not a box widget',
+    'composite_failed' => 'painting over a redacted area failed',
+    'timeout' => 'redacting took too long',
+    'capture_failed' => 'the capture failed on a redacted screen',
+    _ => 'redaction could not complete ($failure)',
+  };
+}

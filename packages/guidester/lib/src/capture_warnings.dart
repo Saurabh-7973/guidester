@@ -157,3 +157,70 @@ String? blankDiagnostic(List<BlankRegion> regions) {
       '($kinds), which rendered blank. This is a Flutter engine limitation, '
       'not a bug in your app.';
 }
+
+/// Why a screenshot with hidden areas was not sent.
+///
+/// Each value names the first thing that went wrong, so a misplaced
+/// `GuidesterRedact` can be found from the dashboard alone. The wire names are
+/// stable: the dashboard reads them.
+enum RedactionFailure {
+  /// A hidden area had not been laid out when the screenshot was taken.
+  notLaidOut('not_laid_out'),
+
+  /// A hidden area's widget was mounted but its render object was gone or
+  /// detached from the tree.
+  detached('detached'),
+
+  /// A hidden area was not inside the part of the app Guidester captures —
+  /// for example in a separate overlay above `MaterialApp.builder`.
+  outsideBoundary('outside_boundary'),
+
+  /// A hidden area was not a box, so it has no rectangle to paint over.
+  notABox('not_a_box'),
+
+  /// Painting over the hidden areas threw.
+  compositeFailed('composite_failed'),
+
+  /// Capturing and redacting took longer than the capture budget.
+  timeout('timeout'),
+
+  /// The capture itself failed while hidden areas were registered.
+  captureFailed('capture_failed');
+
+  const RedactionFailure(this.wire);
+  final String wire;
+}
+
+/// What redaction did to a screenshot, for the dashboard.
+///
+/// Sent only when at least one `GuidesterRedact` was mounted. A count of
+/// regions is the developer's evidence it ran; a failure says why the comment
+/// arrived without a picture.
+class RedactionReport {
+  const RedactionReport.ok(int this.regions) : failure = null;
+  const RedactionReport.failed(RedactionFailure this.failure) : regions = null;
+
+  /// Areas painted over. Zero is a valid answer: every hidden area was
+  /// scrolled away or not drawn at capture time.
+  final int? regions;
+  final RedactionFailure? failure;
+
+  bool get failed => failure != null;
+
+  Map<String, dynamic> toJson() =>
+      failure != null ? {'failure': failure!.wire} : {'regions': regions};
+}
+
+/// What the tester reads when a screenshot was withheld.
+///
+/// Says nothing about what was hidden or where: the tester may not be meant to
+/// know, and the developer gets the reason on the dashboard instead.
+const String redactionFailedNote =
+    'Screenshot not attached. Your comment will still be sent.';
+
+/// The same fact for the developer's console.
+String? redactionDiagnostic(RedactionReport? report) {
+  if (report == null || !report.failed) return null;
+  return '[guidester] screenshot withheld: a GuidesterRedact area could not '
+      'be hidden (${report.failure!.wire}). The comment is sent without it.';
+}

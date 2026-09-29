@@ -28,12 +28,13 @@ Two exceptions:
 | Impact | blocked, annoying or cosmetic, chosen by the tester |
 | Screen name | resolved automatically, plus which layer resolved it |
 | Tap position | normalised 0..1, so the dashboard can pin it at any scale |
-| Screenshot | one PNG of the screen, **excluding** the overlay's own chrome |
+| Screenshot | one PNG of the screen, **excluding** the overlay's own chrome, with every `GuidesterRedact` area painted over before encoding |
 | Tester name | typed once, stored on the device, not an account |
 | Tester id | a random value generated on the device |
 | Comment id | a random value made per comment, so a retried send is stored once |
 | Environment | the `GUIDESTER_ENV` define, when the build sets one (`uat`, `staging`) |
 | Blank regions | where the screenshot is blank because a platform view (map, web view, camera) could not be captured, and which kind |
+| Redaction | only when a `GuidesterRedact` is on screen: how many areas were covered, or why the screenshot was withheld. Never what was hidden |
 
 ## The device
 
@@ -88,9 +89,10 @@ not.
 ## Test builds only
 
 Screenshots from a production build capture *other people's* personal data, which makes you
-a data controller on a live listing. Redaction — a widget that blanks its subtree before
-capture — does not exist yet. Until it does, this belongs in builds that go to people who
-know they are testing.
+a data controller on a live listing. `GuidesterRedact` paints over the areas you wrap —
+opaque, before encoding, and failing closed — but it only covers what you remembered to
+wrap. This still belongs in builds that go to people who know they are testing; use
+redaction for the sensitive fields those builds show.
 
 ## What you must declare
 

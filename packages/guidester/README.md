@@ -26,7 +26,8 @@ the tester's bubble shows a badge on their next launch, and they answer *Works n
 *Still broken* (with a fresh screenshot).
 
 Your testers' screenshots go to **your own** Supabase project. There is no Guidester
-server in between.
+server in between. Anything you wrap in `GuidesterRedact` is painted over before the
+screenshot is even encoded — see [Hide sensitive fields](#hide-sensitive-fields).
 
 ## Quick start
 
@@ -169,6 +170,39 @@ underneath. The bug classes that come from doing it the other way — navigation
 interference, page offsets, router conflicts, theme corruption — are unreachable here by
 construction.
 
+## Hide sensitive fields
+
+Wrap anything a screenshot must not carry off the device — a card number, an account
+balance, another user's name:
+
+```dart
+import 'package:guidester/guidester.dart';
+
+GuidesterRedact(
+  child: TextField(
+    controller: cardNumber,
+    decoration: const InputDecoration(labelText: 'Card number'),
+  ),
+)
+```
+
+When a tester pins a comment, that area arrives as a solid block. Two guarantees:
+
+- **Opaque, not blurred.** The area is filled with a solid colour. A blur can be
+  reversed; a solid fill cannot, so there is nothing to recover.
+- **If redaction fails, no screenshot is sent at all.** If a wrapped area cannot be
+  located when the screenshot is taken, the comment is still sent — text, screen, device
+  and errors — but without the picture. It never falls back to the unredacted one.
+
+The block is painted onto the captured frame **before** it is encoded, so the hidden
+pixels are never in the image the tester previews, the one queued on the device when
+offline, or the one uploaded. Every tester sees a thumbnail of exactly what will be sent.
+
+On the dashboard, a screenshot with hidden areas says how many were covered, and a comment
+whose screenshot was withheld says why, so a misplaced `GuidesterRedact` is easy to find.
+A wrapped area that is scrolled off screen or not drawn is simply not in the picture; one
+that is half visible has its visible half covered.
+
 ## Documentation
 
 | Page | For |
@@ -239,7 +273,8 @@ binary. It never runs. If you need it absent, use a separate entrypoint that doe
 import it.
 
 **Test builds only.** Screenshots from production capture other people's personal data.
-Wait for redaction support before shipping this to a live listing.
+[`GuidesterRedact`](#hide-sensitive-fields) covers the fields you wrap, but only those;
+keep this out of builds on a live listing.
 
 ## What lands on the dashboard
 

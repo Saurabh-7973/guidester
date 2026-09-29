@@ -15,6 +15,11 @@ const Color markupInk = Color(0xFFF43F5E);
 /// a phone reads the same on the dashboard's larger view.
 const double markupWidth = 0.012;
 
+/// Replaces [burnStrokes] in tests, to make a burn fail on demand. Tests
+/// only; null in every build that ships.
+Future<Uint8List?> Function(Uint8List png, List<MarkupStroke> strokes)?
+    debugBurnStrokesOverride;
+
 /// Draws [strokes] into [png] and returns the new PNG. Null when the bytes
 /// cannot be decoded; the caller keeps the original screenshot then, since a
 /// failed mark-up must never lose the capture it was drawn on.
