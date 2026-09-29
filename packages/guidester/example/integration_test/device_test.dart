@@ -61,7 +61,10 @@ void main() {
       expect('${ping['os_version']}', startsWith('Android'));
     }
 
-    // Bubble, then a pin on a button: the button must not fire.
+    // Bubble, then a pin on a button: the button must not fire. Scrolled into
+    // view first: on a landscape phone it sits below the fold.
+    await tester.ensureVisible(find.text('Go to /checkout'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.chat_bubble_outline));
     await tester.pumpAndSettle();
     await tester.tapAt(tester.getCenter(find.text('Go to /checkout')));
@@ -112,6 +115,8 @@ void main() {
     await tester.pumpWidget(ExampleApp(client: ApiClient(client: network)));
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
+    await tester.ensureVisible(find.text('Go to /checkout'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.chat_bubble_outline));
     await tester.pumpAndSettle();
     await tester.tapAt(tester.getCenter(find.text('Go to /checkout')));
