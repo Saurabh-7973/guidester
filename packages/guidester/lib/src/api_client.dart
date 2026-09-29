@@ -120,6 +120,7 @@ class ApiClient {
     List<BlankRegion> blankRegions = const [],
     List<Map<String, dynamic>> errors = const [],
     CaptureContext? context,
+    RedactionReport? redaction,
     String? clientId,
   }) =>
       sendPayload(
@@ -135,6 +136,7 @@ class ApiClient {
           blankRegions: blankRegions,
           errors: errors,
           context: context,
+          redaction: redaction,
           clientId: clientId,
         ),
       );
@@ -155,6 +157,7 @@ class ApiClient {
     List<BlankRegion> blankRegions = const [],
     List<Map<String, dynamic>> errors = const [],
     CaptureContext? context,
+    RedactionReport? redaction,
     String? clientId,
   }) {
     return <String, dynamic>{
@@ -191,8 +194,16 @@ class ApiClient {
         'device_model': context.deviceModel,
         'os_version': context.osVersion,
         'app_version': context.appVersion,
-        'context': context.extra,
       },
+      // What redaction did, inside `context` because ingest stores that object
+      // as sent: the dashboard reads it with no backend change, and an older
+      // backend keeps it too. Sent even when the device context timed out —
+      // a withheld screenshot must never arrive unexplained.
+      if (context != null || redaction != null)
+        'context': <String, dynamic>{
+          ...?context?.extra,
+          if (redaction != null) 'redaction': redaction.toJson(),
+        },
       // Made once per comment and resent with every retry, so a retry of a
       // request that did arrive is recognised rather than stored twice.
       if (clientId != null) 'client_id': clientId,
