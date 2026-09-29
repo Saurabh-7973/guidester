@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../impact.dart';
@@ -23,6 +25,9 @@ class GuidesterComposer extends StatefulWidget {
     this.restoredFrom,
     this.onMarkup,
     this.marks = 0,
+    this.screenshot,
+    this.onPreview,
+    this.screenshotNote,
   });
 
   final String screenName;
@@ -55,6 +60,18 @@ class GuidesterComposer extends StatefulWidget {
 
   /// Strokes already drawn, for the button's label.
   final int marks;
+
+  /// The screenshot that will be sent — redacted, and with any mark-up burned
+  /// in — shown as a thumbnail so every tester sees it, not only those who
+  /// open the markup view. Null hides the thumbnail.
+  final Uint8List? screenshot;
+
+  /// Opens [screenshot] full screen.
+  final VoidCallback? onPreview;
+
+  /// Why no screenshot is attached, when one was withheld. Never says what was
+  /// hidden.
+  final String? screenshotNote;
 
   @override
   State<GuidesterComposer> createState() => _GuidesterComposerState();
@@ -182,6 +199,30 @@ class _GuidesterComposerState extends State<GuidesterComposer> {
               ),
             ),
           ],
+          if (widget.screenshotNote != null) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              liveRegion: true,
+              child: Row(
+                key: const ValueKey('guidester-screenshot-note'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 14,
+                    color: GT.amber,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      widget.screenshotNote!,
+                      style: const TextStyle(fontSize: 12, color: GT.amber),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           TextField(
             controller: _controller,
@@ -201,6 +242,31 @@ class _GuidesterComposerState extends State<GuidesterComposer> {
           const SizedBox(height: 8),
           Row(
             children: [
+              if (widget.screenshot != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Semantics(
+                    button: true,
+                    label: 'View the screenshot that will be sent',
+                    child: GestureDetector(
+                      key: const ValueKey('guidester-thumbnail'),
+                      onTap: widget.sending ? null : widget.onPreview,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          width: 36,
+                          height: 48,
+                          color: GT.surface2,
+                          child: Image.memory(
+                            widget.screenshot!,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               if (widget.onMarkup != null)
                 TextButton.icon(
                   key: const ValueKey('guidester-markup'),

@@ -17,4 +17,5 @@ library;
 
 export 'src/guidester.dart' show Guidester;
 export 'src/overlay.dart' show GuidesterOverlay;
+export 'src/redact.dart' show GuidesterRedact;
 export 'src/screen_resolver.dart' show GuidesterRouteObserver, GuidesterScreen;

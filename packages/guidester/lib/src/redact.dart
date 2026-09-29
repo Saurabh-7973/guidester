@@ -219,7 +219,10 @@ Future<CaptureOutcome> captureRedacted(
         if (plan.rects.isEmpty) return await _encode(image);
         try {
           return await _encode(
-            await compositeRedactions(image, plan.rects),
+            await (debugCompositeRedactionsOverride ?? compositeRedactions)(
+              image,
+              plan.rects,
+            ),
             dispose: true,
           );
         } catch (_) {
@@ -258,6 +261,11 @@ Future<CaptureOutcome> captureRedacted(
         : CaptureOutcome.none;
   }
 }
+
+/// Replaces [compositeRedactions] in tests, to make the paint-over throw or
+/// hang on demand. Tests only; null in every build that ships.
+Future<ui.Image> Function(ui.Image image, List<Rect> rects)?
+    debugCompositeRedactionsOverride;
 
 /// [image] with every rect in [rects] filled with [redactionFill].
 ///

@@ -207,9 +207,8 @@ class RedactionReport {
 
   bool get failed => failure != null;
 
-  Map<String, dynamic> toJson() => failure != null
-      ? {'failure': failure!.wire}
-      : {'regions': regions};
+  Map<String, dynamic> toJson() =>
+      failure != null ? {'failure': failure!.wire} : {'regions': regions};
 }
 
 /// What the tester reads when a screenshot was withheld.

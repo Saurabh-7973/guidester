@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -15,6 +14,7 @@ import 'guidester.dart';
 import 'impact.dart';
 import 'markup.dart';
 import 'outbox.dart';
+import 'redact.dart';
 import 'screen_resolver.dart';
 import 'tester_identity.dart';
 import 'theme/tokens.dart';
@@ -23,6 +23,7 @@ import 'ui/composer.dart';
 import 'ui/markup_view.dart';
 import 'ui/mode_bar.dart';
 import 'ui/name_prompt.dart';
+import 'ui/preview.dart';
 import 'ui/retest_list.dart';
 
 /// Wraps the running app. Never pushes a route, never replaces the tree.
@@ -78,7 +79,19 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
 
   /// The capture as taken, before any mark-up: drawing again starts from it,
   /// so marks can be undone after Done.
+  ///
+  /// Already redacted. [captureRedacted] paints over every [GuidesterRedact]
+  /// before encoding, so this is the only base the preview, the markup view,
+  /// the burn-in, the payload and the outbox ever see. Nothing unredacted is
+  /// held in encoded form anywhere in this state.
   Uint8List? _rawShot;
+
+  /// What redaction did to this capture. Null when no [GuidesterRedact] was
+  /// mounted.
+  RedactionReport? _redaction;
+
+  /// The screenshot shown full screen from the composer's thumbnail.
+  bool _previewing = false;
   List<MarkupStroke> _strokes = const [];
   bool _marking = false;
   bool _sending = false;
@@ -197,6 +210,11 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
 
   /// The draft stays saved: Back is "not now", not "throw it away".
   void _closeFromBack() {
+    // Back from the preview goes back to the composer.
+    if (_previewing) {
+      setState(() => _previewing = false);
+      return;
+    }
     // Back from the drawing view goes back to the composer, drawing kept.
     if (_marking) {
       setState(() => _marking = false);
@@ -299,16 +317,17 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
     super.dispose();
   }
 
-  /// Capture the app, and only the app.
+  /// Capture the app, and only the app, with every [GuidesterRedact] painted
+  /// over before the image is encoded.
   ///
   /// The overlay chrome lives outside this boundary, so it is never in frame.
-  Future<Uint8List?> _capture() async {
+  Future<CaptureOutcome> _capture() async {
     final ctx = _boundaryKey.currentContext;
-    if (ctx == null) return null;
+    if (ctx == null) return CaptureOutcome.none;
     final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) return null;
+    if (boundary == null) return CaptureOutcome.none;
     final w = boundary.size.width;
-    if (w <= 0) return null;
+    if (w <= 0) return CaptureOutcome.none;
     try {
       // A boundary that has not painted this frame throws or returns stale
       // pixels — see flutter/flutter#22308. One frame is enough. Schedule it
@@ -320,17 +339,18 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       }
       final ratio = (720.0 / w).clamp(0.5, 2.0);
       // Bounded: a capture that never completes must not wedge the composer.
-      // The comment still sends, just without a screenshot.
-      return await () async {
-        final image = await boundary.toImage(pixelRatio: ratio);
-        final data = await image.toByteData(format: ui.ImageByteFormat.png);
-        image.dispose();
-        return data?.buffer.asUint8List();
-      }()
-          .timeout(_captureTimeout, onTimeout: () => null);
+      // The comment still sends, just without a screenshot. Redaction is
+      // planned inside, after this frame and before toImage, with no await
+      // between them.
+      return await captureRedacted(
+        boundary,
+        pixelRatio: ratio,
+        targets: RedactionRegistry.targets,
+        timeout: _captureTimeout,
+      );
     } catch (_) {
       // A failed screenshot must never lose the comment.
-      return null;
+      return CaptureOutcome.none;
     }
   }
 
@@ -348,8 +368,11 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       observer: Guidester.observer,
     );
 
-    final shot = await _capture(); // capture BEFORE the composer draws
+    final outcome = await _capture(); // capture BEFORE the composer draws
     if (!mounted) return;
+    final shot = outcome.png;
+    final redactionNote = redactionDiagnostic(outcome.redaction);
+    if (redactionNote != null) debugPrint(redactionNote);
     // Before the composer draws: the tester is still looking at the screen
     // they are describing, and this is the moment the warning is useful.
     final blank = findBlankRegions(box);
@@ -380,6 +403,8 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       _boundarySize = box.size;
       _shot = shot;
       _rawShot = shot;
+      _redaction = outcome.redaction;
+      _previewing = false;
       _strokes = const [];
       _marking = false;
       _blank = blank;
@@ -399,6 +424,8 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       _pin = null;
       _shot = null;
       _rawShot = null;
+      _redaction = null;
+      _previewing = false;
       _strokes = const [];
       _marking = false;
       _boundarySize = null;
@@ -422,6 +449,10 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
 
   /// Burns the strokes into the screenshot that will be sent. A failed burn
   /// keeps the plain capture: the comment is never worse off for marking.
+  ///
+  /// `burned ?? raw` is safe ONLY because [_rawShot] is the redacted capture.
+  /// If this ever falls back to anything taken before [captureRedacted] ran,
+  /// a failed burn ships the hidden pixels. `redaction_test.dart` pins it.
   Future<void> _finishMarkup(List<MarkupStroke> strokes) async {
     final raw = _rawShot;
     if (raw == null) return;
@@ -429,7 +460,9 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
       for (final s in strokes)
         if (s.isNotEmpty) List.of(s),
     ];
-    final burned = kept.isEmpty ? raw : await burnStrokes(raw, kept);
+    final burned = kept.isEmpty
+        ? raw
+        : await (debugBurnStrokesOverride ?? burnStrokes)(raw, kept);
     if (!mounted || _rawShot != raw) return;
     setState(() {
       _strokes = kept;
@@ -495,6 +528,7 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
         blankRegions: _blank,
         errors: ErrorRecorder.toJson(),
         context: captured,
+        redaction: _redaction,
         clientId: Outbox.newClientId(),
       );
       final result = await _api.sendPayload(payload);
@@ -763,6 +797,13 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
                       onMarkup: _rawShot == null || _boundarySize == null
                           ? null
                           : () => setState(() => _marking = true),
+                      screenshot: _shot,
+                      onPreview: _shot == null
+                          ? null
+                          : () => setState(() => _previewing = true),
+                      screenshotNote: (_redaction?.failed ?? false)
+                          ? redactionFailedNote
+                          : null,
                     ),
             ),
           ),
@@ -781,6 +822,14 @@ class _GuidesterOverlayState extends State<GuidesterOverlay>
                     ),
               onCancel: () => setState(() => _marking = false),
               onDone: _finishMarkup,
+            ),
+          ),
+
+        if (_previewing && _shot != null)
+          Positioned.fill(
+            child: GuidesterScreenshotPreview(
+              screenshot: _shot!,
+              onClose: () => setState(() => _previewing = false),
             ),
           ),
 
