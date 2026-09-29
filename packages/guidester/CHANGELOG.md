@@ -1,3 +1,8 @@
+## 0.5.8
+
+- The package now has a homepage, https://saurabhupadhyay.in/guidester, and a verified
+  publisher, saurabhupadhyay.in.
+
 ## 0.5.7
 
 - **Draw on the screenshot.** In the composer, *Mark up screenshot* opens the capture full
