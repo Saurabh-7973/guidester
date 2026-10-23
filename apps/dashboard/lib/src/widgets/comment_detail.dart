@@ -110,12 +110,17 @@ class _CommentDetailState extends State<CommentDetail> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < T.compactBreakpoint;
     return Container(
       decoration: BoxDecoration(
         color: T.surface1,
         borderRadius: BorderRadius.circular(T.rPanel),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+      // A phone has neither the width nor the height for the desktop inset:
+      // at 360px under a long project name the card is barely 100px tall.
+      padding: compact
+          ? const EdgeInsets.all(16)
+          : const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -201,11 +206,15 @@ class _CommentDetailState extends State<CommentDetail> {
           const SizedBox(height: 16),
           // Prev, Delete and Next share one row: a row of its own for Delete
           // was the difference between fitting a laptop screen and scrolling.
+          // On a phone the labels shorten so Delete keeps its room at 360px.
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (widget.onPrev != null)
-                _NavLink(label: '« Prev comment', onTap: widget.onPrev!),
+                _NavLink(
+                  label: compact ? '« Prev' : '« Prev comment',
+                  onTap: widget.onPrev!,
+                ),
               Expanded(
                 child: widget.onDelete == null
                     ? const SizedBox.shrink()
@@ -222,7 +231,10 @@ class _CommentDetailState extends State<CommentDetail> {
                       ),
               ),
               if (widget.onNext != null)
-                _NavLink(label: 'Next comment »', onTap: widget.onNext!),
+                _NavLink(
+                  label: compact ? 'Next »' : 'Next comment »',
+                  onTap: widget.onNext!,
+                ),
             ],
           ),
         ],
