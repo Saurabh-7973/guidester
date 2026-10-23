@@ -27,6 +27,9 @@ external void _openTab(String url, String target);
 const _quickStart = 'https://pub.dev/packages/guidester#quick-start';
 const _pubDev = 'https://pub.dev/packages/guidester';
 
+// The full dashboard on sample data, published beside this page.
+const _dashboardDemo = './dashboard/';
+
 void main() {
   // Any non-empty key and endpoint switch the SDK on. Neither is ever
   // contacted: the client below answers instead of the network.
@@ -138,7 +141,18 @@ class _DemoPageState extends State<DemoPage> {
                 title: 'Try Guidester',
               ),
             );
-            final board = _Board(client: _client);
+            final board = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Board(client: _client),
+                const SizedBox(height: 8),
+                TextButton(
+                  // A new tab, so the comments on this board survive.
+                  onPressed: () => _openTab(_dashboardDemo, '_blank'),
+                  child: const Text('Open the full dashboard demo  →'),
+                ),
+              ],
+            );
             final content = wide
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
