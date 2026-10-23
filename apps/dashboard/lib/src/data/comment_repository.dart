@@ -352,54 +352,7 @@ class SupabaseCommentRepository implements CommentRepository, ReportSource {
           )
           .eq('project_id', projectId);
 
-      final now = DateTime.now();
-      final startOfToday = DateTime(now.year, now.month, now.day);
-      final weekAgo = startOfToday.subtract(const Duration(days: 6));
-
-      var today = 0;
-      var week = 0;
-      var fixedNotVerified = 0;
-      var blocked = 0;
-      final blockedBy = <String, int>{};
-      final openByAssignee = <String, int>{};
-
-      for (final r in rows) {
-        final at = DateTime.tryParse(
-          r['created_at']?.toString() ?? '',
-        )?.toLocal();
-        if (at != null) {
-          if (!at.isBefore(startOfToday)) today++;
-          if (!at.isBefore(weekAgo)) week++;
-        }
-
-        final dev = DevVerdict.fromWire(r['dev_verdict']?.toString());
-        final tester = TesterVerdict.fromWire(r['tester_verdict']?.toString());
-
-        if (dev == DevVerdict.fixed && tester != TesterVerdict.accepted) {
-          fixedNotVerified++;
-        }
-        if (dev == DevVerdict.blocked) {
-          blocked++;
-          final on = BlockedOn.fromWire(r['blocked_on']?.toString());
-          if (on != null) blockedBy[on] = (blockedBy[on] ?? 0) + 1;
-        }
-
-        final who = r['assignee']?.toString();
-        final settled =
-            dev == DevVerdict.wontFix || tester == TesterVerdict.accepted;
-        if (who != null && who.isNotEmpty && !settled) {
-          openByAssignee[who] = (openByAssignee[who] ?? 0) + 1;
-        }
-      }
-
-      return Board(
-        reportedToday: today,
-        reportedThisWeek: week,
-        fixedNotVerified: fixedNotVerified,
-        blocked: blocked,
-        blockedBy: blockedBy,
-        openByAssignee: openByAssignee,
-      );
+      return Board.count(rows.map(Comment.fromRow));
     } on PostgrestException catch (e) {
       throw RepositoryException(_describe(e));
     } on RepositoryException {
