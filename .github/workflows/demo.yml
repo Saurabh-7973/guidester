@@ -1,13 +1,15 @@
 name: Try-it demo
 
 # Publishes the "Try it in your browser" page to GitHub Pages: the example app
-# built from packages/guidester/example/lib/web_demo.dart. Rebuilt whenever the
-# package changes, so the demo always runs the current SDK.
+# built from packages/guidester/example/lib/web_demo.dart, and under
+# /dashboard/ the full dashboard on sample data (apps/dashboard/lib/
+# demo_main.dart). Rebuilt whenever either changes, so both run current code.
 on:
   push:
     branches: [main]
     paths:
       - 'packages/guidester/**'
+      - 'apps/dashboard/**'
       - '.github/workflows/demo.yml'
   workflow_dispatch:
 
@@ -34,6 +36,17 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build web --release -t lib/web_demo.dart --base-href /guidester/
+      - name: Dashboard demo
+        working-directory: apps/dashboard
+        # Nothing may leave the visitor's browser: CanvasKit from this site,
+        # not Google's CDN, and no Google Fonts link (Flutter paints with the
+        # vendored Inter either way; the link only styles the HTML shell).
+        run: |
+          flutter pub get
+          perl -0pi -e 's/\s*<link[^>]*fonts\.(googleapis|gstatic)\.com[^>]*>//g' web/index.html
+          flutter build web --release -t lib/demo_main.dart --base-href /guidester/dashboard/ --no-web-resources-cdn
+      - run: cp -R apps/dashboard/build/web packages/guidester/example/build/web/dashboard
+        working-directory: .
       - uses: actions/upload-pages-artifact@v3
         with:
           path: packages/guidester/example/build/web

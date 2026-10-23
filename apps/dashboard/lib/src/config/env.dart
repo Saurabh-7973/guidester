@@ -26,7 +26,12 @@ class Env {
   /// Where the SDK posts. Derived rather than configured: it is this same
   /// project's edge function, and a second dart-define for a value that can
   /// only ever be one thing is a way to get them out of step.
-  static String get ingestEndpoint => '$supabaseUrl/functions/v1/ingest';
+  ///
+  /// With no URL (the demo build) it reads as a placeholder to fill in, not
+  /// as a path on whatever host serves the page.
+  static String get ingestEndpoint =>
+      '${supabaseUrl.isEmpty ? 'https://<your-project>.supabase.co' : supabaseUrl}'
+      '/functions/v1/ingest';
 
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;

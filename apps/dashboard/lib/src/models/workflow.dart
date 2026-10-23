@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'comment.dart';
 
 /// What the tester says. Moves independently of [DevVerdict].
 ///
@@ -189,6 +190,49 @@ class Board {
   final int blocked;
   final Map<String, int> blockedBy;
   final Map<String, int> openByAssignee;
+
+  /// Counted in Dart from the rows themselves. [now] is for tests.
+  factory Board.count(Iterable<Comment> comments, {DateTime? now}) {
+    final today = now ?? DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final weekAgo = startOfToday.subtract(const Duration(days: 6));
+
+    var reportedToday = 0;
+    var week = 0;
+    var fixedNotVerified = 0;
+    var blocked = 0;
+    final blockedBy = <String, int>{};
+    final openByAssignee = <String, int>{};
+
+    for (final c in comments) {
+      if (!c.createdAt.isBefore(startOfToday)) reportedToday++;
+      if (!c.createdAt.isBefore(weekAgo)) week++;
+
+      if (c.fixedNotVerified) fixedNotVerified++;
+      if (c.devVerdict == DevVerdict.blocked) {
+        blocked++;
+        final on = c.blockedOn;
+        if (on != null) blockedBy[on] = (blockedBy[on] ?? 0) + 1;
+      }
+
+      final who = c.assignee;
+      final settled =
+          c.devVerdict == DevVerdict.wontFix ||
+          c.testerVerdict == TesterVerdict.accepted;
+      if (who != null && !settled) {
+        openByAssignee[who] = (openByAssignee[who] ?? 0) + 1;
+      }
+    }
+
+    return Board(
+      reportedToday: reportedToday,
+      reportedThisWeek: week,
+      fixedNotVerified: fixedNotVerified,
+      blocked: blocked,
+      blockedBy: blockedBy,
+      openByAssignee: openByAssignee,
+    );
+  }
 }
 
 /// Colour for a verdict chip. Impact owns colour in a list **row**; these are

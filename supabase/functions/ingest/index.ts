@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.118.0";
 import { type Arrived, notify } from "./notify.ts";
 
 const cors = {

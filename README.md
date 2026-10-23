@@ -9,6 +9,7 @@ device, the build, and the errors the app threw.
 [![pub package](https://img.shields.io/pub/v/guidester.svg)](https://pub.dev/packages/guidester)
 [![CI](https://github.com/Saurabh-7973/guidester/actions/workflows/ci.yml/badge.svg)](https://github.com/Saurabh-7973/guidester/actions/workflows/ci.yml)
 [![Try it in your browser](https://img.shields.io/badge/Try_it-in_your_browser-2F59ED?style=for-the-badge)](https://saurabh-7973.github.io/guidester/)
+[![Dashboard demo](https://img.shields.io/badge/Dashboard-demo-2F59ED?style=for-the-badge)](https://saurabh-7973.github.io/guidester/dashboard/)
 
 **Get started:** the [Quick start](packages/guidester/README.md#quick-start) takes about 15
 minutes: one command sets up your backend, then two changes to your app.
@@ -136,8 +137,6 @@ Expected: `{"ok":true}`. A wrong key returns 401; a missing `body` returns 400.
 - The local test suite validates against a *stand-in* for the Supabase schema, not the real
   one. It rules out syntax errors, type errors, broken constraints and a broken security
   model. It is not a substitute for `supabase db push` succeeding.
-- `jsr:@supabase/supabase-js@2` is a floating major range, not a pin. The deployed
-  function's client version will drift over time.
 - **The API key is extractable from a shipped APK.** Anyone holding it can post to your
   project, up to the per-key limits (migration 0012): 30 comments, 120 launches and 60
   verdicts a minute, answered with `429 rate_limited` and `Retry-After`. That bounds a
