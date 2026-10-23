@@ -248,10 +248,16 @@ class _MetaRow extends StatelessWidget {
   static String _ago(DateTime then) {
     final d = DateTime.now().difference(then);
     if (d.inMinutes < 1) return 'JUST NOW';
-    if (d.inMinutes < 60) return '${d.inMinutes} MINS AGO';
-    if (d.inHours < 24) return '${d.inHours} HOURS AGO';
-    if (d.inDays < 30) return '${d.inDays} DAYS AGO';
-    return '${(d.inDays / 30).floor()} MONTHS AGO';
+    if (d.inMinutes < 60) return _unitsAgo(d.inMinutes, 'MIN');
+    if (d.inHours < 24) return _unitsAgo(d.inHours, 'HOUR');
+    if (d.inDays < 30) return _unitsAgo(d.inDays, 'DAY');
+    return _unitsAgo((d.inDays / 30).floor(), 'MONTH');
+  }
+
+  /// "1 DAY AGO", "2 DAYS AGO".
+  static String _unitsAgo(int n, String unit) {
+    final plural = n == 1 ? '' : 'S';
+    return '$n $unit$plural AGO';
   }
 }
 

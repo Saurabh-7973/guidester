@@ -592,10 +592,16 @@ class ConnectionCheck extends StatelessWidget {
   /// difference between "it worked" and "that was some earlier run".
   static String _ago(DateTime at) {
     final delta = DateTime.now().difference(at);
-    if (delta.inSeconds < 60) return '${delta.inSeconds} seconds ago';
-    if (delta.inMinutes < 60) return '${delta.inMinutes} minutes ago';
+    if (delta.inSeconds < 60) return _unitsAgo(delta.inSeconds, 'second');
+    if (delta.inMinutes < 60) return _unitsAgo(delta.inMinutes, 'minute');
     String two(int n) => n.toString().padLeft(2, '0');
     return 'at ${two(at.hour)}:${two(at.minute)}';
+  }
+
+  /// "1 second ago", "2 seconds ago".
+  static String _unitsAgo(int n, String unit) {
+    final plural = n == 1 ? '' : 's';
+    return '$n $unit$plural ago';
   }
 }
 
