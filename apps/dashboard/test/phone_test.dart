@@ -39,9 +39,10 @@ class _Projects implements ProjectRepository {
 
 Future<List<DashboardLocation>> _pump(
   WidgetTester tester,
-  DashboardLocation at,
-) async {
-  tester.view.physicalSize = const Size(390, 844);
+  DashboardLocation at, {
+  double width = 390,
+}) async {
+  tester.view.physicalSize = Size(width, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final went = <DashboardLocation>[];
@@ -77,9 +78,24 @@ void main() {
     ('board', const DashboardLocation.board('p1')),
     ('comment', const DashboardLocation.board('p1', commentId: 'c1')),
   ]) {
-    testWidgets('$name fits a 390 px phone', (tester) async {
-      await _pump(tester, at);
-      expect(tester.takeException(), isNull);
-    });
+    for (final width in const [390.0, 360.0]) {
+      testWidgets('$name fits a ${width.toInt()} px phone', (tester) async {
+        await _pump(tester, at, width: width);
+        expect(tester.takeException(), isNull);
+      });
+
+      // The nav row takes the content's 16 px gutter, so "Projects" does
+      // not touch the screen edge (23 Oct).
+      testWidgets('$name nav has a 16 px gutter at ${width.toInt()} px', (
+        tester,
+      ) async {
+        await _pump(tester, at, width: width);
+        expect(tester.getTopLeft(find.text('Projects').first).dx, 16);
+        expect(
+          tester.getTopRight(find.text('Settings').first).dx,
+          lessThanOrEqualTo(width - 16),
+        );
+      });
+    }
   }
 }

@@ -78,6 +78,7 @@ class AppShell extends StatelessWidget {
                       tab: tab,
                       onTabSelected: onTabSelected,
                       trailing: trailing,
+                      compact: size.width < T.compactBreakpoint,
                     ),
                   ),
                 ),
@@ -117,6 +118,8 @@ class AppShell extends StatelessWidget {
                     tab: tab,
                     onTabSelected: onTabSelected,
                     trailing: trailing,
+                    compact:
+                        MediaQuery.sizeOf(context).width < T.compactBreakpoint,
                   ),
                   Expanded(child: child),
                 ],
@@ -139,25 +142,38 @@ class _NavRow extends StatelessWidget {
     required this.tab,
     required this.onTabSelected,
     required this.trailing,
+    this.compact = false,
   });
 
   final ShellTab tab;
   final ValueChanged<ShellTab> onTabSelected;
   final Widget? trailing;
 
+  /// Below [T.compactBreakpoint] the 624px column is wider than the screen
+  /// and clamps to its edges, so the row takes the content's 16px gutter,
+  /// and the tabs close up to 16px apart so `New project` still fits at
+  /// 360px.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final t in ShellTab.values) ...[
           _NavTab(tab: t, active: t == tab, onTap: () => onTabSelected(t)),
           // Gap after every tab but the last.
-          if (t != ShellTab.values.last) const SizedBox(width: T.navGap),
+          if (t != ShellTab.values.last)
+            SizedBox(width: compact ? 16 : T.navGap),
         ],
         const Spacer(),
         ?trailing,
       ],
+    );
+    if (!compact) return row;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: row,
     );
   }
 }

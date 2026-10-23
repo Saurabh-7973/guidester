@@ -215,7 +215,13 @@ class _StatusTabs extends StatelessWidget {
             count: counts[s],
             onTap: () => onSelected(s),
           ),
-          if (s != CommentStatus.values.last) const SizedBox(width: 28),
+          // Closer on a phone: at 28 the three tabs overran 360px.
+          if (s != CommentStatus.values.last)
+            SizedBox(
+              width: MediaQuery.sizeOf(context).width < T.compactBreakpoint
+                  ? 20
+                  : 28,
+            ),
         ],
       ],
     );
