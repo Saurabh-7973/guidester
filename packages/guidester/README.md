@@ -3,12 +3,25 @@
 **Testers tap anywhere in your app, type what's wrong, and it lands on your dashboard with
 a screenshot, the screen name, the device, the build, and the error that caused it.**
 
-![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/demo.gif)
+![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot, the screen name and the saved card blacked out.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/demo.gif)
 
 [![Try it in your browser](https://img.shields.io/badge/Try_it-in_your_browser-2F59ED?style=for-the-badge)](https://saurabh-7973.github.io/guidester/)
+[![Dashboard demo](https://img.shields.io/badge/Dashboard-demo-2F59ED?style=for-the-badge)](https://saurabh-7973.github.io/guidester/dashboard/)
 
 Tap the bubble, pin something, send it, and watch it land on the board. It runs the
 real package in your browser; nothing you type leaves it.
+
+## The dashboard
+
+Where your team triages what testers send: every comment with its screenshot and pin,
+the screen, the device, the build and the error it threw; verdicts for the developer and
+the tester; a retest loop; and a Status page that says whether the build is ready to
+release. [Open the dashboard demo](https://saurabh-7973.github.io/guidester/dashboard/)
+to click through all of it on sample data, no account needed.
+
+![The dashboard: open comments on the left, one comment with its screenshot, pin, captured error and verdicts on the right.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/dashboard.png)
+
+![The Status page: not ready to release, two blocking issues, work grouped by team.](https://raw.githubusercontent.com/Saurabh-7973/guidester/main/packages/guidester/screenshots/status.png)
 
 ## How it works
 

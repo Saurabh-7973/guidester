@@ -4,7 +4,7 @@ In-app tester feedback for Flutter, self-hosted. Testers tap anywhere on any scr
 and send; the comment lands on your dashboard with a screenshot, the screen name, the
 device, the build, and the errors the app threw.
 
-![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.](packages/guidester/screenshots/demo.gif)
+![A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot, the screen name and the saved card blacked out.](packages/guidester/screenshots/demo.gif)
 
 [![pub package](https://img.shields.io/pub/v/guidester.svg)](https://pub.dev/packages/guidester)
 [![CI](https://github.com/Saurabh-7973/guidester/actions/workflows/ci.yml/badge.svg)](https://github.com/Saurabh-7973/guidester/actions/workflows/ci.yml)
