@@ -1,6 +1,8 @@
 ## 0.6.1
 
-- Docs: dashboard demo link. No code changes.
+- Docs: dashboard demo link and a new demo GIF. No code changes.
+- The demo GIF is re-recorded on 0.6: the comment lands in "Checkout app" with the saved
+  card blacked out by `GuidesterRedact`.
 - The README and the pub.dev gallery show the dashboard and its Status page, with a link
   to the [dashboard demo](https://saurabh-7973.github.io/guidester/dashboard/).
 

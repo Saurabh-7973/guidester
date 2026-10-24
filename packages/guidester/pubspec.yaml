@@ -10,7 +10,7 @@ issue_tracker: https://github.com/Saurabh-7973/guidester/issues
 # Shown on pub.dev from the package archive itself, so it works whatever the
 # repository's visibility. Recorded on an emulator against a live backend.
 screenshots:
-  - description: A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot and screen name.
+  - description: A tester pins a comment on the checkout screen; it lands on the dashboard with the screenshot, the screen name and the saved card blacked out.
     path: screenshots/demo.gif
   - description: The dashboard on sample data. Open comments, the screenshot with its pin, the error that came with it, and the verdicts.
     path: screenshots/dashboard.png
