@@ -28,6 +28,7 @@ class CommentDetail extends StatefulWidget {
     this.onDelete,
     this.onDeleteTester,
     this.workflow,
+    this.fitContent = false,
   });
 
   final Comment comment;
@@ -54,6 +55,10 @@ class CommentDetail extends StatefulWidget {
   /// The verdicts, blocker, assignee and history. Null in contexts that only
   /// read — a golden, or a preview.
   final Widget? workflow;
+
+  /// Takes its natural height instead of filling the space it is given, for
+  /// a parent that scrolls: the phone board.
+  final bool fitContent;
 
   @override
   State<CommentDetail> createState() => _CommentDetailState();
@@ -122,6 +127,7 @@ class _CommentDetailState extends State<CommentDetail> {
           ? const EdgeInsets.all(16)
           : const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
       child: Column(
+        mainAxisSize: widget.fitContent ? MainAxisSize.min : MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (widget.onBack != null)
@@ -145,64 +151,70 @@ class _CommentDetailState extends State<CommentDetail> {
                 ),
               ),
             ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Home (8): side by side where the pane is wide, so the
-                // screenshot is sized to the height there is and the triage
-                // controls sit beside it instead of under it. Stacked (and
-                // scrolling) only when the pane is too narrow for both.
-                if (constraints.maxWidth >= _sideBySide) {
-                  return Column(
-                    children: [
-                      ..._head(),
-                      const SizedBox(height: 20),
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, box) => SizedBox(
-                                // A phone screenshot is about 0.46 as wide as
-                                // tall; the height decides, within limits.
-                                width: (box.maxHeight * 0.5).clamp(220, 420),
-                                height: box.maxHeight,
-                                child: _shot(),
-                              ),
-                            ),
-                            const SizedBox(width: 28),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                key: const ValueKey('detail-scroll'),
-                                controller: _scroll,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: _extras(),
+          if (widget.fitContent) ...[
+            ..._head(),
+            const SizedBox(height: 28),
+            Center(child: SizedBox(width: 400, child: _shot())),
+            ..._extras(),
+          ] else
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Home (8): side by side where the pane is wide, so the
+                  // screenshot is sized to the height there is and the triage
+                  // controls sit beside it instead of under it. Stacked (and
+                  // scrolling) only when the pane is too narrow for both.
+                  if (constraints.maxWidth >= _sideBySide) {
+                    return Column(
+                      children: [
+                        ..._head(),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              LayoutBuilder(
+                                builder: (context, box) => SizedBox(
+                                  // A phone screenshot is about 0.46 as wide as
+                                  // tall; the height decides, within limits.
+                                  width: (box.maxHeight * 0.5).clamp(220, 420),
+                                  height: box.maxHeight,
+                                  child: _shot(),
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 28),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  key: const ValueKey('detail-scroll'),
+                                  controller: _scroll,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: _extras(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    );
+                  }
+                  return SingleChildScrollView(
+                    key: const ValueKey('detail-scroll'),
+                    controller: _scroll,
+                    child: Column(
+                      children: [
+                        ..._head(),
+                        const SizedBox(height: 28),
+                        Center(child: SizedBox(width: 400, child: _shot())),
+                        ..._extras(),
+                      ],
+                    ),
                   );
-                }
-                return SingleChildScrollView(
-                  key: const ValueKey('detail-scroll'),
-                  controller: _scroll,
-                  child: Column(
-                    children: [
-                      ..._head(),
-                      const SizedBox(height: 28),
-                      Center(child: SizedBox(width: 400, child: _shot())),
-                      ..._extras(),
-                    ],
-                  ),
-                );
-              },
+                },
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           // Prev, Delete and Next share one row: a row of its own for Delete
           // was the difference between fitting a laptop screen and scrolling.

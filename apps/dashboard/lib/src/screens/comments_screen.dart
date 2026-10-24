@@ -579,6 +579,11 @@ class _CommentsScreenState extends State<CommentsScreen>
         // filters and list are one left panel and the comment takes the rest
         // at full height. Stacked above the pane, the header pushed the
         // screenshot and triage controls into a scroll.
+        // The screen, not this box: the other compact rules go by the screen.
+        if (MediaQuery.sizeOf(context).width < T.compactBreakpoint &&
+            _comments.isNotEmpty) {
+          return _phoneBoard(header, filters);
+        }
         if (constraints.maxWidth >= _railBreakpoint && _comments.isNotEmpty) {
           return _withShortcuts(
             Row(
@@ -741,35 +746,89 @@ class _CommentsScreenState extends State<CommentsScreen>
     return ListView.builder(
       key: const ValueKey('rail'),
       itemCount: _comments.length,
-      itemBuilder: (context, i) {
-        final c = _comments[i];
-        final key = '${c.screenName}|${c.impact.wire}';
-        final collapsed = !seen.add(key);
-        return CommentRow(
-          comment: c,
-          selected: c.id == _selected?.id,
-          duplicateCount: duplicates[key] ?? 0,
-          collapsed: collapsed,
-          onTap: () {
-            _missing = false;
-            _select(c);
-            _announce(commentId: c.id);
-            // Picking from the overlay closes it: you opened it to choose.
-            if (_railOverlay) setState(() => _railOverlay = false);
-          },
-          onMarkInProgress:
-              widget.readOnly || c.status == CommentStatus.inProgress
-              ? null
-              : () => _setStatus(c, CommentStatus.inProgress),
-          onResolve: widget.readOnly || c.status == CommentStatus.resolved
-              ? null
-              : () => _setStatus(c, CommentStatus.resolved),
-        );
-      },
+      itemBuilder: (context, i) => _row(_comments[i], duplicates, seen),
     );
   }
 
-  Widget _pane({VoidCallback? onBack}) => _selected == null
+  /// One list row. [seen] carries which screen-and-impact groups have
+  /// already shown their meta, so it must be shared across one pass.
+  Widget _row(
+    Comment c,
+    Map<String, int> duplicates,
+    Set<String> seen, {
+    VoidCallback? afterTap,
+  }) {
+    final key = '${c.screenName}|${c.impact.wire}';
+    final collapsed = !seen.add(key);
+    return CommentRow(
+      comment: c,
+      selected: c.id == _selected?.id,
+      duplicateCount: duplicates[key] ?? 0,
+      collapsed: collapsed,
+      onTap: () {
+        _missing = false;
+        _select(c);
+        _announce(commentId: c.id);
+        // Picking from the overlay closes it: you opened it to choose.
+        if (_railOverlay) setState(() => _railOverlay = false);
+        afterTap?.call();
+      },
+      onMarkInProgress: widget.readOnly || c.status == CommentStatus.inProgress
+          ? null
+          : () => _setStatus(c, CommentStatus.inProgress),
+      onResolve: widget.readOnly || c.status == CommentStatus.resolved
+          ? null
+          : () => _setStatus(c, CommentStatus.resolved),
+    );
+  }
+
+  /// The comment card on the phone board, to scroll to and from.
+  final _phoneCard = GlobalKey();
+  final _phoneTop = GlobalKey();
+
+  void _reveal(GlobalKey key) =>
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = key.currentContext;
+        if (ctx != null && mounted) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+
+  /// Below [T.compactBreakpoint]: header, filters, the list and the open
+  /// comment in one scroll, the card at its natural height. Squeezed under
+  /// the header into what was left, it was about 100px tall (23 Oct).
+  Widget _phoneBoard(Widget header, Widget filters) {
+    final duplicates = _duplicates;
+    final seen = <String>{};
+    return _withShortcuts(
+      SingleChildScrollView(
+        key: const ValueKey('phone-board'),
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KeyedSubtree(key: _phoneTop, child: header),
+            const SizedBox(height: 16),
+            filters,
+            for (final c in _comments)
+              _row(c, duplicates, seen, afterTap: () => _reveal(_phoneCard)),
+            const SizedBox(height: 16),
+            KeyedSubtree(
+              key: _phoneCard,
+              child: _pane(onBack: () => _reveal(_phoneTop), fitContent: true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pane({VoidCallback? onBack, bool fitContent = false}) =>
+      _selected == null
       ? (_missing ? const _NoSuchComment() : const SizedBox.shrink())
       : CommentDetail(
           comment: _selected!,
@@ -780,6 +839,7 @@ class _CommentsScreenState extends State<CommentsScreen>
           onPrev: () => _step(-1),
           onNext: () => _step(1),
           onBack: onBack,
+          fitContent: fitContent,
           workflow: _viewOnly(
             WorkflowPanel(
               comment: _selected!,

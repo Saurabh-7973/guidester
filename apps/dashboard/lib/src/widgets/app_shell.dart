@@ -54,6 +54,11 @@ class AppShell extends StatelessWidget {
   /// Clears the user chip, which sits outside the column at the bottom left.
   static const double _wideFrom = 1100;
 
+  /// Narrower than the column and a 16px gutter each side: the 624px column
+  /// clamps to the screen and needs the gutter given to it. True up to
+  /// 655px, not only below [T.compactBreakpoint].
+  static bool clamped(double width) => width < T.columnWidth + 32;
+
   @override
   Widget build(BuildContext context) {
     if (fullWidth) {
@@ -78,6 +83,7 @@ class AppShell extends StatelessWidget {
                       tab: tab,
                       onTabSelected: onTabSelected,
                       trailing: trailing,
+                      gutter: clamped(size.width),
                       compact: size.width < T.compactBreakpoint,
                     ),
                   ),
@@ -99,6 +105,7 @@ class AppShell extends StatelessWidget {
         ),
       );
     }
+    final width = MediaQuery.sizeOf(context).width;
     return Scaffold(
       backgroundColor: T.page,
       body: Stack(
@@ -108,21 +115,26 @@ class AppShell extends StatelessWidget {
           // At 1440 the two are the same position.
           Align(
             alignment: Alignment.topCenter,
-            child: SizedBox(
-              width: T.columnWidth,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: T.navTop),
-                  _NavRow(
-                    tab: tab,
-                    onTabSelected: onTabSelected,
-                    trailing: trailing,
-                    compact:
-                        MediaQuery.sizeOf(context).width < T.compactBreakpoint,
-                  ),
-                  Expanded(child: child),
-                ],
+            // Nav and content together: a clamped column touches both edges.
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: clamped(width) ? 16 : 0,
+              ),
+              child: SizedBox(
+                width: T.columnWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: T.navTop),
+                    _NavRow(
+                      tab: tab,
+                      onTabSelected: onTabSelected,
+                      trailing: trailing,
+                      compact: width < T.compactBreakpoint,
+                    ),
+                    Expanded(child: child),
+                  ],
+                ),
               ),
             ),
           ),
@@ -142,6 +154,7 @@ class _NavRow extends StatelessWidget {
     required this.tab,
     required this.onTabSelected,
     required this.trailing,
+    this.gutter = false,
     this.compact = false,
   });
 
@@ -149,10 +162,12 @@ class _NavRow extends StatelessWidget {
   final ValueChanged<ShellTab> onTabSelected;
   final Widget? trailing;
 
-  /// Below [T.compactBreakpoint] the 624px column is wider than the screen
-  /// and clamps to its edges, so the row takes the content's 16px gutter,
-  /// and the tabs close up to 16px apart so `New project` still fits at
-  /// 360px.
+  /// The content's 16px side gutter, when the column has clamped to the
+  /// screen ([AppShell.clamped]) and nothing outside gives one.
+  final bool gutter;
+
+  /// Below [T.compactBreakpoint] the tabs close up to 16px apart, so
+  /// `New project` still fits at 360px.
   final bool compact;
 
   @override
@@ -170,7 +185,7 @@ class _NavRow extends StatelessWidget {
         ?trailing,
       ],
     );
-    if (!compact) return row;
+    if (!gutter) return row;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: row,
