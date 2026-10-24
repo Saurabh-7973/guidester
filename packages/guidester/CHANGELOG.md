@@ -1,3 +1,9 @@
+## 0.6.1
+
+- Docs: dashboard demo link. No code changes.
+- The README and the pub.dev gallery show the dashboard and its Status page, with a link
+  to the [dashboard demo](https://saurabh-7973.github.io/guidester/dashboard/).
+
 ## 0.6.0
 
 - **Hide sensitive fields from screenshots.** Wrap a card number, a balance or another
