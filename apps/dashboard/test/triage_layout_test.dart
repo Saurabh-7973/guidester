@@ -109,8 +109,12 @@ Future<void> _pumpInShell(WidgetTester tester, Size size) async {
 
 /// Wheel-scrolls the rail the way a mouse does, until [body] is on screen or
 /// the wheel stops moving anything.
-Future<void> _wheelUntilVisible(WidgetTester tester, String body) async {
-  final list = find.byType(ListView).first;
+Future<void> _wheelUntilVisible(
+  WidgetTester tester,
+  String body, {
+  Finder? scroller,
+}) async {
+  final list = scroller ?? find.byType(ListView).first;
   for (var i = 0; i < 60; i++) {
     if (find.text(body).hitTestable().evaluate().isNotEmpty) return;
     final at = tester.getCenter(list);
@@ -151,5 +155,16 @@ void main() {
     }
     await _wheelUntilVisible(tester, 'comment 27');
     expect(find.text('comment 27').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('every comment is reachable on a 390 px phone', (tester) async {
+    await _pumpInShell(tester, const Size(390, 844));
+
+    await _wheelUntilVisible(
+      tester,
+      'comment 27',
+      scroller: find.byKey(const ValueKey('phone-board')),
+    );
+    expect(find.text('comment 27').hitTestable(), findsWidgets);
   });
 }
