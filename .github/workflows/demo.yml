@@ -35,7 +35,9 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter build web --release -t lib/web_demo.dart --base-href /guidester/
+      # CanvasKit from this site, not Google's CDN: the page says nothing
+      # leaves the browser. Roboto is bundled in the example for the same reason.
+      - run: flutter build web --release -t lib/web_demo.dart --base-href /guidester/ --no-web-resources-cdn
       - name: Dashboard demo
         working-directory: apps/dashboard
         # Nothing may leave the visitor's browser: CanvasKit from this site,

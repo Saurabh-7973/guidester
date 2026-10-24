@@ -173,7 +173,7 @@ class _GoRouterApp extends StatelessWidget {
         path: '/settings/profile',
         builder: (_, _) => _Demo(
           title: 'GoRouter: /settings/profile',
-          expectation: 'layer 3 — Router URI → SETTINGS/PROFILE',
+          expectation: 'layer 3 — Router URI gives SETTINGS/PROFILE',
           onSwitch: onSwitch,
           links: const [('/', 'Back to /')],
           go: true,

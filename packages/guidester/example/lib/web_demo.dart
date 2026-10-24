@@ -146,10 +146,14 @@ class _DemoPageState extends State<DemoPage> {
               children: [
                 _Board(client: _client),
                 const SizedBox(height: 8),
-                TextButton(
+                TextButton.icon(
                   // A new tab, so the comments on this board survive.
                   onPressed: () => _openTab(_dashboardDemo, '_blank'),
-                  child: const Text('Open the full dashboard demo  →'),
+                  // An icon, not a "→" glyph: the bundled font has no arrows,
+                  // and a missing glyph makes Flutter fetch one from Google.
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  iconAlignment: IconAlignment.end,
+                  label: const Text('Open the full dashboard demo'),
                 ),
               ],
             );
@@ -242,13 +246,15 @@ class _Intro extends StatelessWidget {
           spacing: 12,
           runSpacing: 8,
           children: [
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => _openTab(_quickStart, '_blank'),
               style: FilledButton.styleFrom(
                 backgroundColor: _accent,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Set it up for your app  →'),
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              iconAlignment: IconAlignment.end,
+              label: const Text('Set it up for your app'),
             ),
             OutlinedButton(
               onPressed: () => _openTab(_pubDev, '_blank'),

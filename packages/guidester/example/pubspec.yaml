@@ -63,6 +63,15 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Not Roboto: a small Latin cut of Inter under that name (from
+  # apps/dashboard/fonts, OFL). Flutter web downloads Roboto from Google
+  # unless one is bundled, and the in-browser demo promises nothing leaves the
+  # browser.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Fallback-Latin.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
